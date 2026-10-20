@@ -1,0 +1,128 @@
+/* src/css/gestos.css — componentes de gestos (Etapa 1: cierre por arrastre)
+   El gesto es una alternativa al botón de cerrar: la hoja se "tira" hacia abajo
+   y vuelve a su lugar con animación si no supera umbral. */
+
+/* La hoja modal es el contenedor posicionado de su agarradera, y su scroll
+   no se "cuelga" hacia la página (evita refreshs y scroll encadenado) */
+.modal-content {
+    position: relative;
+    overscroll-behavior: contain;
+}
+
+/* La lista interna de "Mis Recetas" también encadena sólo hasta su tope */
+#lista-recetas-container {
+    overscroll-behavior: contain;
+}
+
+/* Zona de agarre del escáner: se arrastra sin arrastrar la cámara */
+.scanner-header {
+    touch-action: none;
+}
+
+/* ── Agarradera: pista visual de que la hoja se puede tirar hacia abajo ───── */
+.modal-grabber {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    width: 42px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: var(--coipo-border-strong, rgba(120, 124, 140, 0.4));
+    touch-action: none;
+    cursor: grab;
+    z-index: 3;
+    transition: background 0.18s ease, height 0.18s ease;
+}
+/* Zona táctil amplia (±12px verticales) sin ocupar espacio de layout */
+.modal-grabber::after {
+    content: '';
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -24px;
+    right: -24px;
+}
+.modal-grabber:active {
+    background: var(--coipo-text-muted, #8a8f9c);
+    height: 5px;
+    cursor: grabbing;
+}
+
+/* ── Confirmación por gesto ("¿Descartar cambios?") ──────────────────────── */
+.gesto-confirm-overlay {
+    z-index: 1200; /* por encima del modal del que proviene */
+}
+.gesto-confirm-overlay .modal-content {
+    animation: gesto-confirm-entra 0.18s ease;
+}
+@keyframes gesto-confirm-entra {
+    from { transform: translateY(10px) scale(0.98); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── Etapa 3: fila deslizable — acciones DETRÁS, fila por encima ─────────── */
+.swipe-row {
+    position: relative;
+    touch-action: pan-y; /* el scroll vertical pasa al sistema; el horizontal es nuestro */
+}
+.swipe-row > .meal-card,
+.swipe-row > .receta-fila {
+    position: relative;
+    z-index: 1;
+    will-change: transform;   /* capa compuesta: el arrastre va a 60 fps */
+    transition: transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Panel de acciones reveladas (derecha, se descubre al deslizar hacia la izq.) */
+.swipe-acciones {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: stretch;
+    z-index: 0;
+}
+.swipe-accion {
+    border: none;
+    min-width: 84px;
+    padding: 0 16px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--coipo-surface, #eceef2);
+    color: var(--coipo-text, #1a1a1a);
+}
+.swipe-accion:first-child { border-radius: 0 var(--radius-md, 12px) var(--radius-md, 12px) 0; }
+.swipe-accion.peligro {
+    background: var(--coipo-error, #E07A5F); /* mismo rojo que .btn-danger */
+    color: #fff;
+}
+.swipe-accion.neutro {
+    background: var(--coipo-info-strong, #2C5282);
+    color: #fff;
+}
+.swipe-accion:active { filter: brightness(0.92); }
+
+/* Al ejecutar la acción, el panel ya no debe asomar mientras la fila colapsa */
+.swipe-ejecutando .swipe-acciones { display: none; }
+
+/* Colapso optimista de filas de receta (espejo de .meal-eliminando) */
+.swipe-eliminando {
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0 !important;
+    max-height: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-width: 0 !important;
+    transform: translateX(24px) !important;
+    transition: max-height 0.26s ease, opacity 0.2s ease, transform 0.26s ease,
+                margin 0.26s ease, padding 0.26s ease !important;
+}
+
+/* (El ajuste de texto de estas acciones en tema oscuro vive en tema-oscuro.css) */

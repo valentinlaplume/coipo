@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#F5F7F4">
+    <title>Coipo</title>
+
+    <!-- Aplica el tema guardado ANTES del primer pintado (sin parpadeo blanco) -->
+    <script>
+        try {
+            var t = localStorage.getItem('coipo_tema');
+            var oscuro = t === 'oscuro' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (oscuro) {
+                document.documentElement.setAttribute('data-tema', 'oscuro');
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', '#14161A');
+            }
+        } catch (e) { }
+    </script>
+    
+    <link rel="icon" type="image/png" href="./src/assets/logo.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="./src/assets/logo.png" sizes="16x16">
+    <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="./src/assets/logo.png">
+
+    <link rel="stylesheet" href="./src/css/variables.css">
+    <link rel="stylesheet" href="./src/css/main.css">
+
+    <link rel="stylesheet" href="./src/views/splash/splash.css">
+    <link rel="stylesheet" href="./src/views/onboarding/onboarding.css">
+    
+    <link rel="stylesheet" href="./src/views/login/login.css">
+    <link rel="stylesheet" href="./src/views/register/register.css">
+    <link rel="stylesheet" href="./src/views/forgot-password/forgot.css">
+    <link rel="stylesheet" href="./src/views/dashboard/dashboard.css">
+    <link rel="stylesheet" href="./src/views/perfil/perfil.css">
+    <link rel="stylesheet" href="./src/views/sugerencias/sugerencias.css">
+    <link rel="stylesheet" href="./src/css/gestos.css">
+    <link rel="stylesheet" href="./src/css/tema-oscuro.css"><!-- último: sobrescribe los :root en modo oscuro -->
+</head>
+<body>
+    <div id="app"></div>
+    
+    
+    <!-- Modal de Registro de Comida -->
+    <div id="modal-registro" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-height: 88vh; overflow-y: auto;">
+            <h3>Nueva Ingesta</h3>
+            <p style="color: var(--coipo-text-muted); font-size: 0.9rem;">Contale a Coipo qué comiste para calcular los macros.</p>
+            
+            <textarea id="texto-comida" placeholder="Ej: Una ensalada César con pollo y un vaso de agua..."></textarea>
+
+            <!-- Atajo: si era una receta guardada, ir directo al selector -->
+            <button id="elegir-receta-modal" class="btn-secondary btn-block" style="margin: 10px 0 12px;">🍲 ¿Era una receta? Elegirla de Mis Recetas</button>
+
+            <div class="modal-actions">
+                <button id="cancelar-modal" class="btn-secondary">Cancelar</button>
+                <button id="confirmar-modal" class="btn-primary">Analizar Comida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Borrado -->
+    <div id="modal-confirm" class="modal-overlay" style="display: none;">
+        <div class="modal-content confirm-modal">
+            <h3>¿Eliminar registro?</h3>
+            <p id="confirm-text">¿Estás seguro de que querés borrar esta comida? Esta acción no se puede deshacer.</p>
+            
+            <div class="modal-actions">
+                <button id="cancelar-borrado" class="btn-secondary">Cancelar</button>
+                <button id="confirmar-borrado" class="btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-scanner" class="scanner-modal" style="display: none;">
+        <div class="scanner-header">
+            <h3>Escanear Producto</h3>
+            <button id="cerrar-scanner" class="close-btn">✕</button>
+        </div>
+        <div id="reader-wrapper">
+            <div id="reader"></div>   <!-- ← ESTE DIV ES ESENCIAL -->
+            <div class="scanner-overlay">
+                <div class="scanner-laser"></div>
+            </div>
+        </div>
+        <p class="scanner-hint">Apunta al código de barras del producto</p>
+    </div>
+
+    <!-- Modal de Registro de Receta: formulario → previsualización → guardar -->
+    <div id="modal-receta" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 560px; max-height: 85vh; overflow-y: auto;">
+
+            <!-- VISTA 1: formulario (2 inputs: texto de la receta + nombre) -->
+            <div id="receta-form">
+                <h3 id="receta-form-titulo">Crear Nueva Receta</h3>
+                <p id="receta-form-hint" class="receta-hint">Pegá o escribí la receta con todos sus ingredientes y cantidades. La IA calcula los macros y te los muestra antes de guardar.</p>
+                <textarea id="texto-receta" class="receta-campo" placeholder="Ej: MI MEZCLA MAESTRA&#10;📦 561g total&#10;* 200g Soja Texturizada Molida&#10;* 100g Salvado de Avena&#10;* 150g Harina de Arveja&#10;* 50g Collagen Whey Protein&#10;* 31g Cacao Amargo&#10;* 30g Polvo de Hornear&#10;* 13 Sobres Edulcorante"></textarea>
+                <input type="text" id="nombre-receta" class="receta-campo" style="margin-top:10px;" placeholder="Nombre o título de la receta (opcional — lo sugiere la IA)">
+                <div class="modal-actions" style="margin-top:18px;">
+                    <button id="cancelar-receta" class="btn-secondary">Cancelar</button>
+                    <button id="confirmar-receta" class="btn-primary">Calcular macros</button>
+                </div>
+            </div>
+
+            <!-- VISTA 2: previsualización (total + por 100g) antes de guardar -->
+            <div id="receta-preview" style="display:none;">
+                <h3 id="preview-nombre"></h3>
+                <div id="preview-meta"></div>
+                <div id="preview-desc" class="receta-desc" style="display:none;"></div>
+
+                <div class="receta-seccion">Ingredientes · de más a menos calorías</div>
+                <div id="preview-ingredientes" class="receta-ing"></div>
+
+                <div class="receta-seccion">Macros de la preparación</div>
+                <div id="preview-tarjetas"></div>
+
+                <div id="preview-avisos" style="margin-top:10px;"></div>
+
+                <div class="modal-actions" style="margin-top:14px;">
+                    <button id="volver-receta" class="btn-secondary">← Editar</button>
+                    <button id="guardar-receta" class="btn-primary">Guardar receta</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal para seleccionar receta guardada -->
+    <div id="modal-select-receta" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>Mis Recetas</h3>
+            <div id="lista-recetas-container" style="max-height: 400px; overflow-y: auto; margin: 16px 0;">
+                <!-- Aquí se cargarán dinámicamente las recetas -->
+            </div>
+            <div class="modal-actions">
+                <button id="cancelar-select-receta" class="btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de DETALLE de receta (info completa + eliminar) -->
+    <div id="modal-detalle-receta" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 560px; max-height: 85vh; overflow-y: auto;">
+            <div id="detalle-receta-contenido">
+                <!-- Se carga dinámicamente desde dashboard.view.js -->
+            </div>
+
+            <!-- Acciones normales -->
+            <div class="modal-actions modal-actions-compact" id="detalle-acciones" style="margin-top:16px;">
+                <button id="editar-receta-btn" class="btn-secondary">Editar</button>
+                <button id="usar-desde-detalle" class="btn-primary">Usar</button>
+                <button id="eliminar-receta-btn" class="btn-danger">Eliminar</button>
+                <button id="cerrar-detalle-receta" class="btn-secondary">Cerrar</button>
+            </div>
+
+            <!-- Confirmación de eliminación (sin prompts del navegador) -->
+            <div id="detalle-confirmar-eliminar" class="receta-confirmar" style="display:none;">
+                <p id="detalle-confirmar-texto"></p>
+                <div class="modal-actions">
+                    <button id="cancelar-eliminar-receta" class="btn-secondary">Cancelar</button>
+                    <button id="si-eliminar-receta" class="btn-danger">Sí, eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ingresar GRAMOS consumidos de una receta (regla de 3 EN VIVO) + extras -->
+    <div id="modal-porciones-receta" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-height: 88vh; overflow-y: auto;">
+            <h3 id="receta-nombre-porciones"></h3>
+            <p class="receta-hint" style="margin-bottom:8px;">¿De cuántos gramos comiste? El total se calcula mientras escribís.</p>
+
+            <!-- Referencia por 100 g (para extrapolación mental) -->
+            <div id="receta-info-gramos" class="receta-chips"></div>
+
+            <input type="number" id="input-gramos-receta" class="receta-campo" value="" min="1" step="1" placeholder="Gramos consumidos (ej: 30)">
+
+            <!-- CÁLCULO EN VIVO: regla de 3 instantánea (receta + extras si ya se calcularon) -->
+            <div id="calculo-vivo" class="receta-vivo" style="display:none;"></div>
+
+            <textarea id="extras-receta" class="receta-campo" style="min-height:64px; margin-top:10px; font-size:0.9rem;" rows="2" placeholder="Opcional — ingredientes extra: ej. 2 claras de huevo, 200ml leche..."></textarea>
+            <button id="calcular-extras-btn" class="btn-secondary btn-block" style="margin-top:8px;">🔍 Calcular total con extras</button>
+            <p class="receta-hint" style="font-size:0.74rem; margin-top:8px; margin-bottom:12px;">El total en vivo es solo de la receta. Con este botón sumás los extras de la descripción (IA) al total.</p>
+
+            <div class="modal-actions">
+                <button id="cancelar-porciones" class="btn-secondary">Cancelar</button>
+                <button id="confirmar-porciones" class="btn-primary">Registrar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module" src="./src/main.js"></script>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
+</body>
+</html>

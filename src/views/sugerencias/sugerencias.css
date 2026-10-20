@@ -1,0 +1,532 @@
+/* src/views/sugerencias/sugerencias.css
+   Chat de sugerencias: mobile-first, todo apilado, sin ruido visual. */
+
+/* ── Cabecera fija: restante del día + barras de macros ─────────────── */
+.sug-header {
+    position: sticky;
+    top: 8px;
+    z-index: 40;
+    background: var(--coipo-card);
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.sug-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.sug-header-top h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    margin: 0;
+}
+
+.sug-sub {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+
+.sug-reiniciar {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--coipo-surface);
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--coipo-text-muted, #7E7E7E);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.sug-reiniciar:active { transform: scale(0.96); background: var(--coipo-bg); }
+
+/* Card del restante */
+.sug-restante-card {
+    background: var(--coipo-bg);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.sug-kcal {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.sug-kcal-valor {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--coipo-primary-dark);
+}
+
+.sug-kcal-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+
+.sug-barras {
+    display: flex;
+    flex-direction: column;
+}
+
+.sug-barra-fila {
+    display: grid;
+    grid-template-columns: 66px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
+}
+
+.sug-barra-nombre {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+}
+
+.sug-barra {
+    height: 8px;
+    background: rgba(141, 160, 129, 0.16);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.sug-barra > div {
+    height: 100%;
+    width: 0;
+    border-radius: 99px;
+    transition: width 0.45s ease;
+}
+#sug-barra-p { background: var(--prot-color, var(--coipo-primary)); }
+#sug-barra-c { background: var(--carb-color, var(--coipo-warning)); }
+#sug-barra-g { background: var(--fat-color, var(--coipo-accent)); }
+
+.sug-barra-valor {
+    font-size: 0.68rem;
+    color: var(--coipo-text-muted, #7E7E7E);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ── Ajustes (momento + excluir usadas): tira bajo la cabecera ──────── */
+.sug-ajustes {
+    background: var(--coipo-card);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sug-momento {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.sug-momento-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--coipo-text-muted, #7E7E7E);
+    width: 100%;
+}
+
+.sug-momento-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+}
+.sug-momento-chips .pill {
+    flex: 0 0 auto;
+    padding: 8px 13px;
+    font-size: 0.78rem;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+.sug-momento-chips .pill:active { transform: scale(0.96); }
+
+.sug-excluir {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.82rem;
+    color: var(--coipo-text);
+    cursor: pointer;
+}
+.sug-excluir input {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--coipo-primary);
+    cursor: pointer;
+}
+
+/* ── Conversación ────────────────────────────────────────────────────── */
+.sug-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.sug-bubble {
+    max-width: 94%;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    animation: sugAparecer 0.25s ease;
+}
+.sug-bubble p { margin: 0; }
+.sug-bubble p + p { margin-top: 6px; }
+
+@keyframes sugAparecer {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sug-asistente {
+    background: var(--coipo-card);
+    color: var(--coipo-text);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom-left-radius: 6px;
+    align-self: flex-start;
+}
+
+.sug-usuario {
+    background: var(--coipo-primary);
+    color: #fff;
+    border-bottom-right-radius: 6px;
+    align-self: flex-end;
+    font-size: 0.86rem;
+    max-width: 80%;
+}
+
+.sug-pregunta { font-weight: 700; font-size: 0.95rem; }
+
+.sug-nota {
+    color: var(--coipo-text-muted, #7E7E7E);
+    font-size: 0.85rem;
+}
+
+.sug-pista {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.72rem;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+
+/* Opciones de respuesta (usan el .pill existente) */
+.sug-opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.sug-opciones .pill {
+    flex: 1 1 30%;
+    padding: 10px 12px;
+    font-size: 0.86rem;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.15s ease;
+}
+.sug-opciones .pill:active { transform: scale(0.97); }
+.sug-opciones .pill.sug-pre {
+    background: var(--coipo-card);
+    box-shadow: inset 0 0 0 2px var(--coipo-primary);
+    color: var(--coipo-primary-dark);
+}
+
+/* Grilla de intents: uno abajo del otro */
+.sug-intents {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.sug-intent {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    background: var(--coipo-card);
+    border: 1px solid rgba(141, 160, 129, 0.45);
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--coipo-text);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.sug-intent::after {
+    content: '›';
+    font-size: 1.1rem;
+    color: var(--coipo-primary);
+    font-weight: 700;
+}
+.sug-intent:active { transform: scale(0.98); background: var(--coipo-bg); }
+
+/* Spinner / pensando */
+.sug-pensando {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+
+/* ── Tarjetas de sugerencia ──────────────────────────────────────────── */
+.sug-card {
+    background: var(--coipo-card);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: sugAparecer 0.25s ease;
+}
+.sug-card-ok { opacity: 0.7; border-color: rgba(163, 177, 138, 0.7); }
+
+.sug-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+.sug-card-top h4 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+}
+
+.sug-factor {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--coipo-primary-dark);
+    background: rgba(141, 160, 129, 0.16);
+    padding: 3px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+}
+
+.sug-pill {
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--coipo-accent-text);
+    background: rgba(190, 168, 146, 0.25);
+    padding: 3px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+}
+
+.sug-porcion {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--coipo-text);
+}
+.sug-porcion b {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--coipo-primary-dark);
+}
+
+.sug-macros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--coipo-text);
+}
+
+.sug-m-kcal {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--coipo-primary-dark);
+    line-height: 1;
+}
+.sug-m-kcal small {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--coipo-text-muted, #7E7E7E);
+    margin-left: 3px;
+}
+
+.sug-motivo {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+
+.sug-card-acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.sug-btn-registrar { min-width: 140px; }
+.sug-btn-registrar.sug-registrado {
+    background: var(--coipo-success);
+    border-color: transparent;
+}
+
+/* Valores editables del "libre" */
+.sug-libre-campos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.sug-libre-campos label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--coipo-text-muted, #7E7E7E);
+}
+.sug-libre-campos input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid var(--coipo-surface);
+    border-radius: 10px;
+    background: var(--coipo-bg);
+    font-size: 0.95rem;
+    color: var(--coipo-text);
+}
+
+/* Feedback 👍/👎 */
+.sug-votos { display: flex; gap: 6px; }
+.sug-voto {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--coipo-surface);
+    background: var(--coipo-card);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sug-voto:active { transform: scale(0.9); }
+.sug-voto.activo[data-v="up"] {
+    background: rgba(141, 160, 129, 0.18);
+    border-color: var(--coipo-primary);
+    box-shadow: 0 0 0 2px rgba(141, 160, 129, 0.25);
+}
+.sug-voto.activo[data-v="down"] {
+    background: rgba(224, 122, 95, 0.12);
+    border-color: var(--coipo-error);
+    box-shadow: 0 0 0 2px rgba(224, 122, 95, 0.2);
+}
+
+/* ── Texto libre ─────────────────────────────────────────────────────── */
+.sug-textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 62px;
+    margin-top: 9px;
+    padding: 10px 12px;
+    border: 1px solid var(--coipo-surface);
+    border-radius: 12px;
+    background: var(--coipo-bg);
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--coipo-text);
+    resize: vertical;
+}
+
+.sug-texto-pie {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+.sug-counter {
+    font-size: 0.72rem;
+    color: var(--coipo-text-muted, #7E7E7E);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Acciones finales / errores ──────────────────────────────────────── */
+.sug-fin {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.sug-error-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.sug-fin-btn {
+    padding: 8px 14px;
+    border-radius: 99px;
+    border: 1px solid rgba(141, 160, 129, 0.5);
+    background: var(--coipo-card);
+    color: var(--coipo-primary-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.sug-fin-btn:active { transform: scale(0.96); background: var(--coipo-bg); }
+
+/* ── Disclaimer ──────────────────────────────────────────────────────── */
+.sug-disclaimer {
+    text-align: center;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--coipo-text-muted, #7E7E7E);
+    opacity: 0.9;
+    margin: 16px 0 0;
+    padding: 0 8px;
+}
+
+/* ── Ajustes finos en pantalla chiquita ──────────────────────────────── */
+@media (max-width: 400px) {
+    .sug-header { padding: 12px 13px; }
+    .sug-kcal-valor { font-size: 1.85rem; }
+    .sug-barra-fila { grid-template-columns: 60px 1fr auto; }
+    .sug-opciones .pill { flex: 1 1 45%; }
+    .sug-btn-registrar { min-width: 120px; }
+}

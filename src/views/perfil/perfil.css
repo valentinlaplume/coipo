@@ -1,0 +1,282 @@
+/* src/views/perfil/perfil.css */
+/* Perfil de usuario — reutiliza los controles del onboarding (pills, sliders,
+   option-cards) y la paleta Coipo. Misma estructura que el dashboard. */
+
+/* ─── HERO: avatar + identidad ─── */
+.perfil-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-bottom: 4px;
+}
+
+.perfil-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--coipo-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+    box-shadow: 0 6px 14px rgba(141, 160, 129, 0.3);
+}
+
+.perfil-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.perfil-hero-info strong {
+    font-size: 1.05rem;
+    color: var(--coipo-text);
+    text-transform: capitalize;
+}
+
+.perfil-hero-info span {
+    font-size: 0.8rem;
+    color: var(--coipo-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.perfil-hero-info .perfil-miembro {
+    font-size: 0.72rem;
+    color: var(--coipo-accent);
+    font-weight: 600;
+}
+
+/* ─── SECCIONES (tarjetas blancas) ─── */
+.perfil-seccion {
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.perfil-seccion-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.perfil-seccion-titulo h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+}
+
+.perfil-campo {
+    margin-bottom: 18px;
+}
+
+.perfil-campo:last-child {
+    margin-bottom: 0;
+}
+
+/* ─── META DIARIA (solo lectura) ─── */
+.perfil-meta-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.perfil-meta-kcal,
+.perfil-meta-agua {
+    flex: 1;
+    background: var(--coipo-bg);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.perfil-meta-kcal b,
+.perfil-meta-agua b {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    line-height: 1.2;
+}
+
+.perfil-meta-kcal span,
+.perfil-meta-agua span {
+    font-size: 0.68rem;
+    color: var(--coipo-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.perfil-nota {
+    font-size: 0.72rem;
+    color: var(--coipo-text-muted);
+    margin-top: 12px;
+    font-style: italic;
+}
+
+/* ─── SESIÓN ─── */
+.perfil-sesion-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--coipo-bg);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+}
+
+.perfil-sesion-fila span {
+    color: var(--coipo-text-muted);
+    flex-shrink: 0;
+}
+
+.perfil-sesion-fila b {
+    color: var(--coipo-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Confirmación inline de cierre de sesión (sin alerts del navegador) */
+.perfil-confirm {
+    background: var(--coipo-tint-error);
+    border: 1px solid var(--coipo-error);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.perfil-confirm p {
+    font-size: 0.88rem;
+    color: var(--coipo-text);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* ─── BARRA STICKY "CAMBIOS SIN GUARDAR" ─── */
+.perfil-barra-guardar {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 110px; /* encima del bottom-nav flotante */
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--coipo-card);
+    border: 1px solid rgba(141, 160, 129, 0.25);
+    border-radius: 16px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    animation: perfil-subir 0.25s ease;
+}
+
+@keyframes perfil-subir {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
+.perfil-barra-guardar span {
+    flex: 1;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--coipo-text);
+    padding-left: 4px;
+}
+
+.perfil-barra-guardar button {
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: var(--font-main);
+    transition: all 0.2s ease;
+}
+
+.perfil-barra-guardar button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Restricciones alimentarias: chips multi-selección ── */
+.pill-group.pill-wrap {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.pill-group.pill-wrap .pill {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    border-radius: 99px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease;
+}
+.pill-group.pill-wrap .pill:active { transform: scale(0.96); }
+.pill-group.pill-wrap .pill.active {
+    border-color: var(--coipo-primary);
+}
+
+/* ── Interruptor (switch) de Apariencia ── */
+.perfil-ajuste-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 2px 2px;
+}
+.perfil-ajuste-texto strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--coipo-text);
+}
+.perfil-ajuste-texto span {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--coipo-text-muted);
+    margin-top: 2px;
+}
+.switch {
+    flex-shrink: 0;
+    width: 52px;
+    height: 32px;
+    border: none;
+    border-radius: 16px;
+    background: var(--coipo-surface);
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.25s ease;
+}
+.switch[aria-pressed="true"] { background: var(--coipo-primary); }
+.switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.switch[aria-pressed="true"] .switch-knob { transform: translateX(20px); }

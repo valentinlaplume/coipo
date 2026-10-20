@@ -1,0 +1,11 @@
+// coipo-app/
+// ├── node_modules/    (Librerías de Firebase/Vite)
+// ├── public/          (Logo de Coipo, favicon)
+// ├── src/             <-- TODO TU CÓDIGO AQUÍ
+// │   ├── config.js    (Tu archivo con las keys de Gemini)
+// │   ├── main.js      (El cerebro de la app)
+// │   ├── style.css    (Tus colores pasteles)
+// │   └── services/    (Lógica de Firebase)
+// ├── .env             (Variables secretas)
+// ├── index.html       (Llama a /src/main.js)
+// └── package.json

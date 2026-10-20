@@ -1,0 +1,1687 @@
+/* src/views/dashboard/dashboard.css */
+
+:root {
+    --coipo-bg: #F5F7F4;
+    --coipo-card: #FFFFFF;
+    --coipo-primary: #8DA081;
+    --coipo-primary-dark: #4A5D23;
+    --coipo-text: #1C1C1E;
+    --coipo-text-light: #8E8E93;
+    --prot-color: #FF5E3A;
+    --carb-color: #FFCC00;
+    --fat-color: #34C759;
+}
+
+.dashboard-layout {
+    padding: 20px 20px 120px 20px; /* Espacio para el nav y el FAB */
+    background-color: var(--coipo-bg);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* HEADER */
+.dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.date-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--coipo-primary);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.dash-header h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    margin: 0;
+}
+
+.profile-avatar {
+    width: 45px;
+    height: 45px;
+    background: var(--coipo-card);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* ALERTAS (Lesiones) */
+.alert-pill {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--coipo-tint-error);
+    padding: 10px 15px;
+    border-radius: 50px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    color: var(--coipo-danger-strong);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--coipo-danger-strong);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+/* ------------------- LÍNEA DE TIEMPO DE ENERGÍA (Compacta) ------------ */
+
+.energy-timeline-section {
+    background: var(--coipo-card);
+    padding: 20px;
+    border-radius: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 16px;
+}
+
+.main-kcal {
+    display: flex;
+    flex-direction: column;
+}
+
+.main-kcal .value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    line-height: 1;
+}
+
+.main-kcal .label {
+    font-size: 0.85rem;
+    color: var(--coipo-text-light);
+    font-weight: 600;
+}
+
+.secondary-stats {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--coipo-text-light);
+    gap: 2px;
+}
+
+.secondary-stats b {
+    color: var(--coipo-text);
+}
+
+.consumed-color {
+    color: var(--coipo-primary-dark) !important;
+}
+
+/* ---LA BARRA SEGMENTADA */
+.timeline-container {
+    width: 100%;
+}
+
+.timeline-bar-bg {
+    position: relative;
+    height: 12px;
+    background: #E9ECEF;
+    border-radius: 6px;
+    overflow: hidden; /* Para que el progreso no se salga de los bordes redondeados */
+    margin-bottom: 8px;
+}
+
+.timeline-progress {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, var(--coipo-primary), var(--coipo-primary-dark));
+    border-radius: 6px;
+    transition: width 0.5s ease-out;
+}
+
+.timeline-segments {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    pointer-events: none; /* No interfiere con clicks */
+}
+
+.segment-divider {
+    width: 2px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.5); /* Líneas blancas sutiles */
+}
+
+.timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--coipo-text-light);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* BARRAS DE MACROS */
+/* --- RESUMEN DE MACROS (Texto en Grilla 2x2) --- */
+
+.macros-quick-view {
+    margin-bottom: 24px;
+}
+
+.macros-summary-card {
+    background: var(--coipo-card);
+    padding: 20px;
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.03); /* Misma sombra que el círculo de kcal para consistencia */
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 columnas iguales */
+    gap: 20px 15px; /* 20px de espacio vertical, 15px horizontal */
+}
+
+.macro-text-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Un pequeño detalle UX: un borde de color a la izquierda para identificar rápido el macro */
+    border-left: 3px solid transparent;
+    padding-left: 12px;
+}
+
+/* Colores para cada macro (usando las variables que ya tenías) */
+.macro-text-item.prot { border-color: var(--prot-color); }
+.macro-text-item.carb { border-color: var(--carb-color); }
+.macro-text-item.fat { border-color: var(--fat-color); }
+.macro-text-item.fiber { border-color: #A1887F; } /* Un tono tierra para la fibra */
+
+.macro-text-item .macro-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--coipo-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.macro-text-item .macro-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+}
+
+/* ------------------------ SECCIÓN AGUA / VASOS ------------------------ */
+
+.water-card {
+    background: var(--coipo-card);
+    padding: 20px;
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.03);
+}
+
+.water-counter {
+    font-size: 0.9rem;
+    color: var(--coipo-text-light);
+    font-weight: 600;
+}
+
+.water-counter b {
+    color: var(--coipo-info-strong); /* Azul agua */
+    font-size: 1rem;
+}
+
+.glasses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); /* Se ajusta solo al ancho */
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.glass-item {
+    aspect-ratio: 1/1;
+    background: var(--coipo-bg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid transparent;
+}
+
+.glass-icon {
+    font-size: 1.2rem;
+    filter: grayscale(100%) opacity(0.3); /* Vaso vacío */
+    transition: all 0.3s ease;
+}
+
+/* Estado Lleno */
+.glass-item.filled {
+    background: var(--coipo-tint-agua);
+    border-color: #A0C4FF;
+    transform: scale(1.1);
+}
+
+.glass-item.filled .glass-icon {
+    filter: grayscale(0%) opacity(1);
+    transform: translateY(-2px);
+}
+
+.water-meta-text {
+    font-size: 0.75rem;
+    color: var(--coipo-text-light);
+    text-align: center;
+    margin: 0;
+    font-style: italic;
+}
+
+/* HABITOS DIARIOS */
+.daily-habits h3 {
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.habit-card {
+    background: var(--coipo-card);
+    padding: 15px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.habit-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.habit-icon {
+    font-size: 1.8rem;
+}
+
+.add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--coipo-surface);
+    color: var(--coipo-primary-dark);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* FAB BUTTON (Botón de IA) */
+/* ==========================================================================
+   ARREGLO DEL BOTÓN FLOTANTE (FAB) - Despejando el Nav inferior
+   ========================================================================== */
+.fab-ai {
+    position: fixed;
+    /* Lo bajamos para que se integre visualmente con la barra de navegación */
+    bottom: 25px; 
+    left: 50%;
+    transform: translateX(-50%);
+    
+    /* Lo hacemos mucho más pequeño y discreto */
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    
+    /* Fondo sólido o un blur tipo iOS en lugar de ese gradiente pesado */
+    background: var(--coipo-chip-dark-bg);
+    color: white;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Eliminamos el texto "Registrar Comida" */
+    font-size: 0; 
+    
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 2px solid white; /* Le da separación del fondo */
+    z-index: 1001; 
+}
+
+/* Mostramos solo un icono de chispas o un + */
+.fab-ai::before {
+    content: '✨'; /* O el icono que prefieras */
+    font-size: 1.2rem;
+}
+
+/* Ocultamos el texto que está rompiendo todo */
+.fab-ai span {
+    display: none;
+}
+
+/* Agrega espacio al final de la lista para que el botón no tape la info al scrollear */
+.meals-list {
+    padding-bottom: 0px; /* Dale aire extra al final */
+}
+
+
+/* ---------------- NAV FLOTANTE ---------------- */
+.bottom-nav {
+    position: fixed;
+    bottom: 24px; /* Un poco más de aire desde el fondo */
+    left: 12px;
+    right: 12px;
+    height: 75px;
+    
+    /* Aumentamos un poco la opacidad y usamos un color base más puro */
+    
+    /* El truco del borde: Un borde muy fino y claro genera el efecto de cristal */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-radius: 24px; /* Menos circular, más estilo 'Squircle' moderno */
+    
+    /* Sombra más profunda y difusa para separarlo de los cards */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    height: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    filter: grayscale(1); /* Los emojis se ven más serios si están apagados */
+    opacity: 0.5;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Etiqueta debajo del icono (nav de 5 ítems: emoji arriba, texto abajo) */
+.nav-texto {
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: -0.1px;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+}
+.nav-item.active .nav-texto {
+    opacity: 1;
+    font-weight: 700;
+    color: var(--coipo-primary-dark);
+}
+
+/* --- ESTADO ACTIVO (El toque de Coipo) --- */
+.nav-item.active {
+    color: var(--coipo-primary-dark);
+    position: relative;
+}
+
+.nav-item.active .nav-icon {
+    opacity: 1;
+    filter: grayscale(0); /* Recupera el color original */
+    transform: translateY(-4px); /* Pequeño salto hacia arriba */
+}
+
+/* Indicador de punto debajo del icono activo */
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 12px;
+    width: 5px;
+    height: 5px;
+    background-color: var(--coipo-primary);
+    border-radius: 50%;
+}
+
+/* ---------------------- SECCIÓN COMIDAS (Ajustado) ----------------------*/
+/* --- BADGES DE CATEGORÍA (Reemplaza a meal-icon) --- */
+.meal-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px; /* Estilo Apple: cuadrado muy redondeado */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Colores por momento del día */
+.b-breakfast { background: linear-gradient(135deg, #FF9500, #FFB347); } /* Naranja */
+.b-lunch     { background: linear-gradient(135deg, #34C759, #28A745); } /* Verde */
+.b-snack     { background: linear-gradient(135deg, #FFCC00, #FFD633); } /* Amarillo */
+.b-dinner    { background: linear-gradient(135deg, #5856D6, #7876E0); } /* Violeta/Azul */
+
+.meal-item {
+    background: var(--coipo-card);
+    padding: 16px;
+    border-radius: 22px;
+    display: flex;
+    align-items: flex-start; /* Badge alineado arriba */
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+
+/* ESTA ES LA CLAVE: Empuja todo lo que sigue a la derecha */
+.meal-info {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Evita que textos largos rompan el layout */
+}
+
+.meal-info strong { 
+    display: block; 
+    font-size: 0.95rem; 
+    color: var(--coipo-text); 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Si el nombre es muy largo, pone ... */
+}
+
+.meal-info p { 
+    font-size: 0.8rem; 
+    color: var(--coipo-text-light); 
+    margin: 2px 0 0; 
+}
+
+/* Fila de arriba (Título y Kcal) */
+.meal-header-row {
+    display: flex;
+    justify-content: space-between; /* Empuja kcal a la derecha */
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 12px; /* Espacio antes de los macros */
+}
+
+.meal-title {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    /* Seguridad extra: si el texto es muy ancho para el contenedor, pone puntos */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%; 
+}
+
+.meal-subtitle {
+    font-size: 0.8rem;
+    color: var(--coipo-text-light);
+    font-weight: 600;
+}
+
+.meal-kcal {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--coipo-primary-dark);
+}
+
+.meal-unit {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+}
+
+/* --- MACROS EN ANCHO COMPLETO --- */
+.meal-item-macros {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas exactas e iguales */
+    gap: 8px;
+    width: 100%;
+}
+.m-tag {
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: center; /* Centra el contenido "P: 4g" */
+    padding: 6px 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 8px;
+    background: var(--coipo-surface);
+    /* Los bordes de colores que ya tenías se mantienen aquí */
+
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--coipo-surface);
+    color: var(--coipo-text);
+}
+
+/* --- MACROS POTENCIADOS --- */
+.meal-item-macros {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* Colores de acento sutiles para los macros */
+/* --- INDICADORES POR MACRO --- */
+
+/* Proteína: Naranja/Rojizo (Energía y músculo) */
+.m-tag.p { 
+    border-left: 3px solid var(--coipo-danger-strong); 
+    background-color: rgba(255, 87, 51, 0.05);
+}
+
+/* Carbohidratos: Amarillo/Dorado (Combustible) 
+   Usamos un tono ligeramente más oscuro que el amarillo puro para que sea legible */
+.m-tag.c { 
+    border-left: 3px solid #FFC107; 
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+/* Grasas: Verde (Salud y saciedad) */
+.m-tag.g { 
+    border-left: 3px solid #4CAF50; 
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+/* Fibra: Marrón/Grisáceo (Digestión y saciedad) 
+   Lo diferenciamos del verde de las grasas */
+.m-tag.f { 
+    border-left: 3px solid #8D6E63; 
+    background-color: rgba(141, 110, 99, 0.05);
+}
+
+/* --- ESTILO BASE DE LAS ETIQUETAS --- */
+.m-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px 8px 8px 4px; /* Redondeamos más el lado derecho que el izquierdo */
+    color: var(--coipo-text); /* Un gris oscuro para que el texto sea legible sobre los fondos claros */
+    display: flex;
+    align-items: center;
+}
+
+.meal-stats {
+    text-align: right;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.meal-kcal {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--coipo-text);
+}
+
+/* --- AJUSTE COMIDA PENDIENTE --- */
+.meal-item.pending {
+    background: transparent;
+    border: 2px dashed #D1D1D6;
+    box-shadow: none;
+    opacity: 0.8;
+}
+
+/* Estilo del botón + para que coincida con la posición de las kcal */
+.add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--coipo-primary);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.add-btn:active {
+    transform: scale(0.9);
+    background: var(--coipo-primary-dark);
+}
+
+/* MODAL DETALLE (Preview) */
+.meal-detail-sheet {
+    padding: 20px;
+    background: var(--coipo-card);
+    border-radius: 30px 30px 0 0;
+}
+
+.drag-handle {
+    width: 40px;
+    height: 5px;
+    background: #E5E5EA;
+    border-radius: 10px;
+    margin: 0 auto 20px;
+}
+
+.micros-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.micro-tag {
+    background: var(--coipo-accent);
+    color: var(--coipo-primary-dark);
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* --- BOTÓN "VER HISTORIAL" (Estilo Minimalista) --- */
+.section-header {
+    display: flex;
+    justify-content: flex-start; /* Alinea todo al inicio (izquierda) */
+    align-items: center;
+    gap: 12px; /* Espacio entre el título y el botón */
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.text-btn {
+    background: var(--coipo-primary);
+    border: none;
+    color: white; /* Cambié var(--coipo-bg) por white para asegurar contraste si es verde */
+    font-size: 0.80rem; /* Un pelín más chico para que no compita con el H3 */
+    font-weight: 700;
+    cursor: pointer;
+    padding: 6px 10px; /* Más compacto para que parezca un "badge" de acción */
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.text-btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+/* --- CONTENEDOR DE LISTA DE COMIDAS --- */
+
+.today-meals {
+    margin-top: 10px; /* Espacio extra respecto a los macros */
+}
+
+/* Slot de registro con un toque de color para que llame la atención */
+.meal-item.pending-new {
+    background: linear-gradient(to right, var(--coipo-card), var(--coipo-surface));
+    border: 2px solid var(--coipo-primary-light); /* Un borde suave del color de Coipo */
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.b-next {
+    background: var(--coipo-surface);
+    color: var(--coipo-primary);
+    border: 2px dashed var(--coipo-primary);
+}
+
+.add-btn-main {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: var(--coipo-primary);
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 10px rgba(var(--coipo-primary-rgb), 0.3);
+    transition: transform 0.2s;
+}
+
+.meal-item.pending-new:active {
+    transform: scale(0.98);
+}
+
+/* Estilo rápido para el botón de borrar en la card */
+.delete-meal-btn {
+    opacity: 0.5;
+    transition: opacity 0.2s, color 0.2s;
+    z-index: 10;
+    color: red;
+}
+
+
+
+/* Ajuste para que el texto largo no se pise con la X */
+.meal-header-row {
+    position: relative;
+    padding-right: 25px; 
+}
+
+/*--------------------------------------- CALENDARIO --------------------------------------- */
+/* --- CALENDARIO SEMANAL (Estilo Coipo) --- */
+
+.weekly-calendar {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 8px;
+    background-color: var(--coipo-card);
+    border-radius: 16px; /* Usando tu estándar de bordes */
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--coipo-bg);
+}
+
+.day-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 8px 4px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    margin: 0px 6px;
+}
+
+/* Día seleccionado */
+.day-item.active {
+    background-color: var(--coipo-primary);
+    color: white;
+    transform: translateY(-8px);
+    box-shadow: 0 4px 10px rgba(141, 160, 129, 0.3);
+}
+
+/* Indicador de "Hoy" cuando no está seleccionado */
+.day-item.is-today:not(.active) {
+    border: 1px solid var(--coipo-primary);
+}
+
+.day-name {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--coipo-text-light);
+}
+
+.day-item.active .day-name { 
+    color: rgba(255, 255, 255, 0.9); 
+}
+
+.day-number {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+}
+
+.day-item.active .day-number {
+    color: white;
+}
+
+/* Punto indicador de actividad bajo el número (Opcional) */
+.active-dot {
+   
+    background-color: white;
+}
+/*--------------------------------------- FIN CALENDARIO --------------------------------------- */
+.dashboard-layout {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+}
+
+/* Tags de micros — visualmente más discretos que los macros */
+.m-tag.micro {
+    background: var(--coipo-tint-info);
+    color: var(--coipo-info-text);
+    border: 1px solid #d0daf5;
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.m-tag.micro.omega {
+    background: var(--coipo-tint-success);
+    color: var(--coipo-success-text);
+    border-color: #b8ead4;
+}
+
+/* Spinner de carga discreto */
+.micros-spinner {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid #ddd;
+    border-top-color: #aaa;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Contenedor de la cuadrícula de Macros */
+.macros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Crea las 2 columnas */
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.macro-card {
+    background: var(--coipo-card); /* O el color de fondo que prefieras */
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
+}
+
+.macro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+    
+}
+
+.macro-name { color: var(--coipo-text-muted); }
+.macro-values { color: var(--coipo-text); font-size: 0.8rem; }
+
+/* Contenedor de la barra (el fondo gris) */
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    
+}
+
+/* Relleno de la barra */
+.progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease-in-out;
+}
+
+.prot { background-color: #ff4757; } /* Rojo/Coral */
+.carb { background-color: #2ed573; } /* Verde */
+.fat { background-color: #ffa502; }  /* Naranja */
+.fiber { background-color: #747d8c; } /* Gris/Azul */
+
+.progress-percent {
+    font-size: 0.75rem;
+    color: var(--coipo-text-muted);
+    text-align: right;
+}
+
+/* Estilos para el Desplegable de Micros */
+.micros-collapsible {
+    margin-top: 20px;
+}
+
+details {
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+summary {
+    list-style: none;
+    padding: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    outline: none;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+.micros-content {
+    padding: 15px;
+    border-top: 1px solid var(--coipo-border);
+    background-color: var(--coipo-row);
+}
+
+.icon-arrow {
+    transition: transform 0.3s;
+}
+
+details[open] .icon-arrow {
+    transform: rotate(180deg);
+}
+
+/* Contenedor del desplegable */
+.micros-collapsible {
+    margin: 15px 0;
+    border-radius: 12px;
+    background: var(--coipo-card);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    overflow: hidden;
+    border: 1px solid #edf2f7;
+}
+
+/* Estilo del "Botón" de control */
+summary.micros-summary-title {
+    list-style: none;
+    padding: 15px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--coipo-text);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+summary.micros-summary-title:hover {
+    background-color: var(--coipo-surface);
+}
+
+/* Quitar el triángulo por defecto en Safari/Chrome */
+summary::-webkit-details-marker {
+    display: none;
+}
+/* Cuadrícula de Micros */
+.micros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 por fila */
+    gap: 15px;
+}
+
+/* Permitir que elementos específicos ocupen todo el ancho si es necesario */
+.full-width {
+    grid-column: span 2;
+}
+
+.micro-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: var(--coipo-card);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.micro-header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.micro-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--coipo-text-muted);
+}
+
+.micro-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+}
+
+/* La Barra de Progreso de Micros */
+.micro-progress-bg {
+    width: 100%;
+    height: 6px; /* Más delgada que los macros */
+    background-color: #edf2f7;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.micro-fill {
+    height: 100%;
+    background-color: #4299e1; /* Azul estándar para metas */
+    border-radius: 10px;
+    transition: width 0.4s ease-out;
+}
+
+/* Colores específicos */
+.micro-fill.warning {
+    background-color: #ed8936; /* Naranja para Sodio */
+}
+
+.micro-fill.omega {
+    background-color: #38b2ac; /* Turquesa para Omegas */
+}
+
+/* Estilo del Desplegable */
+details {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+summary.micros-summary-title {
+    padding: 12px 15px;
+    font-weight: bold;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* NUEVO CODIGO PARA VISUALIZAR INGESTAAS */
+/* ─── MEAL CARD ─────────────────────────────────────────── */
+.meal-card {
+    background: var(--coipo-card);
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid #f0f0f0;
+    overflow: hidden;
+}
+
+/* HEADER */
+.meal-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--coipo-border);
+    background: var(--coipo-row);
+}
+
+.meal-index {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.meal-title-block {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.meal-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--coipo-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.meal-time {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.meal-kcal-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.meal-kcal-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--coipo-text);
+    line-height: 1;
+}
+
+.meal-kcal-label {
+    font-size: 10px;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.meal-delete-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s, background 0.2s;
+}
+.meal-delete-btn:hover, .meal-delete-btn:active {
+    color: var(--coipo-danger-strong);
+    background: var(--coipo-tint-error);
+}
+
+/* LISTA DE ALIMENTOS */
+.meal-items-list {
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meal-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.meal-item-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--coipo-border-strong);
+    flex-shrink: 0;
+}
+
+.meal-item-name {
+    flex: 1;
+    color: var(--coipo-text);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meal-item-grams {
+    color: var(--coipo-text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.meal-item-kcal {
+    color: var(--coipo-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: 52px;
+    text-align: right;
+}
+
+/* Macros por ingrediente: punto de color del app + texto (sin emojis) */
+.meal-item-macros {
+    display: flex;
+    gap: 12px;
+    padding-left: 10px;
+    margin-top: 1px;
+    font-size: 0.72rem;
+    color: var(--coipo-text-muted);
+}
+.meal-item-macros span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.meal-item-macros span::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.meal-item-macros .mi-prot::before { background: #4CAF50; }
+.meal-item-macros .mi-carb::before { background: #FF9800; }
+.meal-item-macros .mi-fat::before { background: #F44336; }
+.meal-item-macros .mi-fib::before  { background: #2196F3; }
+
+/* ACORDEÓN: detalle de ingredientes (colapsado por defecto, se abre al tocar) */
+.meal-detalle-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 16px 8px;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--coipo-border);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--coipo-text-muted);
+    cursor: pointer;
+}
+.meal-detalle-chev {
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+.meal-card.detalle-abierto .meal-detalle-chev { transform: rotate(180deg); }
+.meal-detalle-cuerpo {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+}
+.meal-card.detalle-abierto .meal-detalle-cuerpo { grid-template-rows: 1fr; }
+.meal-detalle-cuerpo > div { overflow: hidden; }
+
+/* MACROS */
+.meal-macros-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--coipo-surface);
+    border-top: 1px solid var(--coipo-surface);
+}
+
+.macro-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px;
+    background: var(--coipo-card);
+    gap: 2px;
+}
+
+.pill-label {
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+}
+
+.pill-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--coipo-text);
+}
+
+/* Color indicator per macro */
+.macro-pill.prot { border-top: 3px solid #4CAF50; }
+.macro-pill.carb { border-top: 3px solid #FF9800; }
+.macro-pill.fat  { border-top: 3px solid #F44336; }
+.macro-pill.fiber{ border-top: 3px solid #2196F3; }
+
+/* MICROS */
+.meal-micros-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--coipo-border);
+    background: var(--coipo-row);
+}
+
+.micro-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--coipo-tint-info);
+    border: 1px solid #dde5ff;
+    border-radius: 20px;
+    padding: 3px 9px;
+}
+
+.micro-chip.omega {
+    background: var(--coipo-tint-success);
+    border-color: #b8ead4;
+}
+
+.micro-chip-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--coipo-info-text);
+    text-transform: uppercase;
+}
+
+.micro-chip.omega .micro-chip-label {
+    color: var(--coipo-success-text);
+}
+
+.micro-chip-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--coipo-text);
+}
+
+/* LOADING DOTS */
+.meal-micros-loading {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 11px;
+    color: #bbb;
+    border-top: 1px solid var(--coipo-border);
+}
+
+.loading-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ddd;
+    animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse-dot {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40%           { opacity: 1;   transform: scale(1); }
+}
+
+/* Esto crea el separador entre elementos */
+.meal-item-container:not(:last-child) {
+    border-bottom: 1px solid #eeeeee; /* Línea gris muy suave */
+    margin-bottom: 8px;
+    padding-bottom: 3px;
+}
+
+/* Ajuste opcional para el detalle */
+.meal-item-macros-detail {
+    display: flex; 
+    gap: 10px; 
+    font-size: 0.75rem; 
+    color: var(--coipo-text-muted); 
+    padding-left: 18px; 
+    margin-top: 2px;
+}
+
+.fab-add {
+    position: fixed;
+    bottom: 80px; /* Por encima de tu bottom-nav */
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #4a90e2;
+    color: white;
+    font-size: 24px;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    cursor: pointer;
+}
+
+
+.scanner-header {
+    width: 100%;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    box-sizing: border-box;
+}
+
+.scanner-header h3 { color: #fff; margin: 0; font-size: 1.1rem; font-weight: 600; }
+
+#reader-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#reader {
+    width: 100%;
+    height: 100%;
+}
+
+/* Overlay que define el área de enfoque */
+.scanner-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    border: 80px solid rgba(0, 0, 0, 0.6); /* Oscurece el resto */
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Marco de enfoque (la "caja" transparente) */
+.scanner-overlay::after {
+    content: "";
+    width: 250px;
+    height: 250px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.2);
+}
+
+.scanner-laser {
+    width: 200px;
+    height: 2px;
+    background: #ff3b30;
+    position: absolute;
+    box-shadow: 0 0 10px #ff3b30;
+    animation: scan 2s infinite ease-in-out;
+}
+
+.scanner-hint {
+    color: #ccc;
+    margin-bottom: 30px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@keyframes scan {
+    0% { transform: translateY(-100px); }
+    50% { transform: translateY(100px); }
+    100% { transform: translateY(-100px); }
+}
+
+
+.scanner-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Mejoras al modal del escáner */
+.scanner-modal .close-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.scanner-modal .close-btn:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+.scanner-modal .scanner-hint {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    padding: 10px 20px;
+    border-radius: 40px;
+    margin: 20px;
+    font-weight: 500;
+}
+
+
+/* ===== SUBMENÚ DE ACCIONES (horizontal adaptable) ===== */
+.submenu-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+    padding: 0 4px;
+}
+
+.action-btn {
+    background: var(--coipo-card);
+    border: 1px solid rgba(141, 160, 129, 0.2);
+    border-radius: 16px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.action-btn:active {
+    transform: scale(0.96);
+    background: var(--coipo-bg);
+}
+
+.action-icon {
+    font-size: 28px;
+}
+
+.action-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--coipo-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Hover solo para escritorio (opcional) */
+@media (hover: hover) {
+    .action-btn:hover {
+        background: var(--coipo-bg);
+        border-color: var(--coipo-primary);
+        transform: translateY(-2px);
+    }
+}
+
+/* ===== HIDRATACIÓN — ACORDEÓN (mismo estilo que Micronutrientes) ===== */
+.hydration-collapsible .micros-summary-title {
+    font-size: 0.95rem;
+    color: var(--coipo-text);
+}
+
+/* Título + contador juntos a la izquierda, flecha a la derecha */
+.hydration-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Contador como badge: el dato del día se ve SIN abrir el acordeón */
+.hydration-badge {
+    background: var(--coipo-tint-agua);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--coipo-info-strong);
+    line-height: 1.4;
+}
+
+.hydration-badge b {
+    color: var(--coipo-info-strong);
+    font-size: 0.82rem;
+}
+
+.hydration-collapsible .glasses-grid {
+    margin-bottom: 0;
+}
+
+/* ===== NAV: BOTÓN ➕ DE REGISTRAR (acción principal) ===== */
+.nav-add {
+    gap: 3px;
+    color: var(--coipo-primary-dark);
+    font-weight: 700;
+    font-size: 0.72rem;
+}
+
+.nav-add-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--coipo-primary);
+    color: #fff;
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-add-label {
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 0.66rem;
+}
+
+@media (hover: hover) {
+    .nav-add:hover .nav-add-circle {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+}
+
+.nav-add:active .nav-add-circle {
+    transform: scale(0.92);
+}
+
+/* ===== BORRADO OPTIMISTA: la tarjeta/fila colapsa al instante ===== */
+.meal-eliminando {
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0 !important;
+    transform: translateX(24px);
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-width: 0 !important;
+    transition: all 0.25s ease;
+}

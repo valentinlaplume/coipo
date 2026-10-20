@@ -1,0 +1,904 @@
+@import './variables.css'; /* Importamos las variables aquí */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--coipo-bg);
+    color: var(--coipo-text);
+    overflow-x: hidden;
+}
+
+#app {
+    width: 100%;
+    min-height: 100vh;
+    max-width: 500px; /* Centramos la app tipo móvil en pantallas grandes */
+    margin: 0 auto;
+    position: relative;
+}
+
+/* Clase útil para cambios de pantalla suaves */
+.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- MODAL REGISTRO DE COMIDA (Estilo Coipo) --- */
+/* Nota: antes había acá un primer bloque .modal-overlay/.modal-content/#texto-comida
+   duplicado; se eliminó porque este bloque de abajo lo sobrescribía igual. */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--coipo-overlay); /* fondo de modal, adaptado por tema */
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: var(--coipo-bg);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--coipo-surface);
+}
+
+/* Celular promedio (≤480px): menos padding → más ancho útil para el contenido */
+@media (max-width: 480px) {
+    .modal-overlay { padding: 12px; }
+    .modal-content { padding: 1.25rem 1.15rem; }
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: var(--coipo-text);
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.modal-content p {
+    color: var(--coipo-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Textarea Orgánico */
+#texto-comida {
+    box-sizing: border-box;
+    width: 100%;
+    height: 140px;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--coipo-surface); /* Contraste real para inputs */
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    color: var(--coipo-text);
+    resize: none;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+#texto-comida:focus {
+    border-color: var(--coipo-primary);
+    background-color: var(--coipo-card);
+    box-shadow: var(--shadow-soft);
+}
+
+#texto-comida::placeholder {
+    color: var(--coipo-text-muted);
+    opacity: 0.6;
+}
+
+/* Contenedor de botones */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* Estilo Base de Botones en Modal */
+.modal-actions button {
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    font-family: var(--font-main);
+    flex: 1; /* Ambos miden lo mismo */
+    transition: all 0.3s ease;
+}
+
+/* Fila con 4 botones (detalle de receta: Editar/Usar/Eliminar/Cerrar) */
+.modal-actions-compact button {
+    padding: 12px 6px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+/* Botón Analizar (Acción Verde) */
+.btn-primary {
+    background-color: var(--coipo-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+    background-color: var(--coipo-text-muted);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Botón Cancelar (Marrón Tierra o Gris) */
+.btn-secondary {
+    background-color: var(--coipo-surface);
+    color: var(--coipo-text);
+}
+
+.btn-secondary:hover {
+    background-color: var(--coipo-accent);
+    color: white;
+}
+
+/* BORRAR INGESTA */
+
+/* Variación para el botón de eliminar */
+.btn-danger {
+    background-color: var(--coipo-error);
+    color: white;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+}
+
+/* Ajuste fino para el modal de confirmación */
+.confirm-modal {
+    max-width: 350px; /* Más pequeño que el de registro */
+    text-align: center;
+}
+
+.confirm-modal h3 {
+    color: var(--coipo-error); /* Título en color de alerta */
+}
+
+.confirm-modal .modal-actions {
+    margin-top: 2rem;
+}
+
+/* BOTON DE ELIMINAR INGESTA EN EL CARD VISUAL */
+
+/* Botón de borrar dentro de la tarjeta de comida */
+.delete-meal-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    
+    /* Colores usando tu paleta */
+    background-color: var(--coipo-surface); /* Fondo sutil oliva */
+    color: var(--coipo-text-muted);         /* Cruz en gris */
+    
+    border: none;
+    border-radius: 50%; /* Lo hacemos circular */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+/* Efecto al pasar el mouse o tocarlo */
+.delete-meal-btn:hover {
+    background-color: var(--coipo-error); /* Cambia al coral de error */
+    color: white;                         /* La cruz pasa a blanco */
+    transform: scale(1.1);                /* Se agranda un poquito */
+    box-shadow: 0 2px 8px rgba(224, 122, 95, 0.3);
+}
+
+/* iOS Settings */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+        padding-top: max(0px, env(safe-area-inset-top));
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Previene "bounce" en iOS */
+body {
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Input focus en iOS no hace zoom */
+input:focus {
+    font-size: 16px;
+}
+
+/* MOBILE FIX — Prevenir scroll horizontal */
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* El contenedor principal debe scrollear, no el body */
+#app, main, [data-view] {
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* Smooth en iOS */
+}
+
+/* Modalees y overlays */
+.modal, .overlay, [role="dialog"] {
+    position: fixed;
+    width: 100%;
+    max-width: 100vw;
+    left: 0;
+    right: 0;
+}
+
+/* Inputs no hagan zoom en iOS */
+input, textarea, select {
+    font-size: 16px;
+}
+
+/* Box model correcto */
+* {
+    box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODALES DE RECETAS — uniformes con la paleta orgánica Coipo
+   (registrar · mis recetas · detalle · usar)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Campos de formulario (textarea e input) */
+.receta-campo {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background-color: var(--coipo-surface);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    color: var(--coipo-text);
+    outline: none;
+    transition: all 0.3s ease;
+}
+.receta-campo:focus {
+    border-color: var(--coipo-primary);
+    background-color: var(--coipo-card);
+    box-shadow: var(--shadow-soft);
+}
+.receta-campo::placeholder {
+    color: var(--coipo-text-muted);
+    opacity: 0.6;
+}
+textarea.receta-campo {
+    resize: vertical;
+    line-height: 1.5;
+    min-height: 240px; /* Alto suficiente para ver todo el texto de la receta */
+}
+
+/* Textos auxiliares dentro de modales */
+.modal-content .receta-hint {
+    font-size: 0.88rem;
+    margin-bottom: 1.1rem;
+    color: var(--coipo-text-muted);
+    line-height: 1.5;
+}
+
+/* Chips de metadatos (peso, porciones, kcal…) */
+.receta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 14px;
+}
+.receta-chip {
+    background: var(--coipo-surface);
+    color: var(--coipo-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.receta-chip-acento {
+    background: rgba(141, 160, 129, 0.25);
+    color: var(--coipo-primary-dark);
+}
+
+/* Títulos de sección */
+.receta-seccion {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--coipo-text-muted);
+    margin: 18px 0 8px;
+}
+
+/* Descripción escrita por el usuario */
+.receta-desc {
+    background: var(--coipo-surface);
+    border-left: 3px solid var(--coipo-accent);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--coipo-text);
+    white-space: pre-wrap;
+    max-height: 130px;
+    overflow-y: auto;
+    margin: 0 0 4px;
+}
+
+/* Meta de la receta (peso, rendimiento, porción) — FILAS apiladas, nada al lado */
+.receta-meta-lista {
+    background: var(--coipo-surface);
+    border-radius: var(--radius-md);
+    padding: 2px 14px;
+    margin: 4px 0 6px;
+}
+.receta-meta-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--coipo-border);
+}
+.receta-meta-fila:last-child { border-bottom: none; }
+.receta-meta-fila span { color: var(--coipo-text-muted); }
+.receta-meta-fila b {
+    color: var(--coipo-text);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Lista de ingredientes — BLOQUES APILADOS (siempre por calorías ↓) */
+.receta-ing {
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.receta-ing-bloque {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--coipo-border);
+}
+.receta-ing-bloque:last-child {
+    border-bottom: none;
+}
+.receta-ing-bloque-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+}
+.receta-ing-bloque-nombre {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--coipo-text);
+    line-height: 1.35;
+    word-break: break-word; /* nombres largos: se van a 2 renglones, nunca cortados */
+}
+.receta-ing-bloque-kcal {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--coipo-accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.receta-ing-bloque-meta,
+.receta-ing-bloque-macros {
+    font-size: 0.78rem;
+    color: var(--coipo-text-muted);
+    margin-top: 3px;
+    line-height: 1.45;
+}
+.receta-ing-marca {
+    font-style: normal;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--coipo-accent-text);
+    background: rgba(190, 168, 146, 0.30);
+    border-radius: 999px;
+    padding: 1px 7px;
+    white-space: nowrap;
+}
+
+/* Desglose de la porción en el cálculo en vivo (ingrediente × factor) */
+.receta-vivo-ing-lista {
+    border: 1px solid var(--coipo-border);
+    border-radius: 10px;
+    margin: 8px 0 2px;
+    overflow: hidden;
+}
+.receta-vivo-ing {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    border-bottom: 1px solid var(--coipo-border);
+}
+.receta-vivo-ing:last-child { border-bottom: none; }
+.receta-vivo-ing-nombre {
+    color: var(--coipo-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.receta-vivo-ing-g { font-weight: 700; color: var(--coipo-text); text-align: right; }
+.receta-vivo-ing-kcal { font-weight: 600; color: var(--coipo-accent); text-align: right; }
+
+/* Tarjetas de macros (Receta completa vs Por 100 g) — SIEMPRE apiladas */
+.receta-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.receta-card {
+    min-width: 0;
+    background: var(--coipo-surface);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+}
+.receta-card-acento {
+    background: rgba(141, 160, 129, 0.20);
+}
+.receta-card-titulo {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--coipo-text-muted);
+    margin-bottom: 8px;
+}
+.receta-macro-linea {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.88rem;
+    padding: 3px 0;
+    color: var(--coipo-text);
+}
+.receta-macro-linea b {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Avisos (ingredientes que no se pudieron calcular) */
+.receta-aviso {
+    background: rgba(242, 204, 143, 0.35);
+    color: var(--coipo-warning-strong);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    border-radius: 10px;
+    padding: 9px 13px;
+    margin-bottom: 10px;
+}
+
+/* Filas de la lista "Mis Recetas" */
+.receta-fila {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    margin-bottom: 9px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--coipo-surface);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+.receta-fila:hover {
+    border-color: var(--coipo-primary);
+}
+.receta-fila-info {
+    flex: 1;
+    min-width: 0;
+}
+.receta-fila-info strong {
+    display: block;
+    color: var(--coipo-text);
+    font-size: 0.95rem;
+}
+.receta-fila-info span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--coipo-text-muted);
+    margin-top: 2px;
+}
+.receta-icon-btn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--coipo-border);
+    border-radius: 12px;
+    background: var(--coipo-bg);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+.receta-icon-btn:hover {
+    background: var(--coipo-primary);
+    border-color: var(--coipo-primary);
+}
+.receta-icon-btn-eliminar:hover {
+    background: var(--coipo-error);
+    border-color: var(--coipo-error);
+}
+
+/* Confirmación de eliminación dentro del modal */
+.receta-confirmar {
+    border-top: 1px solid var(--coipo-surface);
+    margin-top: 8px;
+    padding-top: 14px;
+}
+.modal-content .receta-confirmar p {
+    color: var(--coipo-error);
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Acordeón "Descripción" en el detalle (colapsado: se ve solo al tocarlo) */
+.receta-acordeon {
+    margin: 2px 0 4px;
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    background: rgba(232, 232, 227, 0.40);
+    overflow: hidden;
+}
+.receta-acordeon-resumen {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--coipo-text-muted);
+    list-style: none;          /* sin viñeta ni triángulo por defecto */
+    user-select: none;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+.receta-acordeon-resumen::-webkit-details-marker { display: none; } /* Safari */
+.receta-acordeon-resumen::marker { content: ''; }                   /* Firefox */
+.receta-acordeon-resumen:hover {
+    color: var(--coipo-text);
+    background: rgba(232, 232, 227, 0.75);
+}
+.receta-acordeon-icono {
+    font-size: 0.85rem;
+    transition: transform 0.25s ease;
+}
+.receta-acordeon[open] .receta-acordeon-icono { transform: rotate(180deg); }
+.receta-acordeon[open] .receta-acordeon-resumen {
+    color: var(--coipo-text);
+    border-bottom: 1px solid var(--coipo-border);
+}
+.receta-acordeon .receta-desc {
+    margin: 10px 10px 10px;
+    max-height: 170px;
+    overflow-y: auto;
+}
+
+/* Cálculo EN VIVO de la porción (modal "Usar Receta") */
+.receta-vivo {
+    margin-top: 10px;
+    background: var(--coipo-surface);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+}
+.receta-vivo-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+.receta-vivo-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--coipo-text-muted);
+}
+.receta-vivo-kcal {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--coipo-text);
+    line-height: 1.15;
+}
+.receta-vivo-kcal small {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--coipo-text-muted);
+    margin-left: 5px;
+}
+.receta-vivo-macros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+    font-size: 0.87rem;
+    color: var(--coipo-text-muted);
+    margin: 5px 0 9px;
+}
+.receta-vivo-macros b {
+    color: var(--coipo-text);
+    font-weight: 700;
+}
+.receta-vivo .receta-chips {
+    margin-bottom: 0;
+}
+.receta-vivo-desglose {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--coipo-border-strong);
+    font-size: 0.78rem;
+    color: var(--coipo-text-muted);
+}
+.receta-vivo-desglose b {
+    color: var(--coipo-text);
+}
+
+/* Botón a todo el ancho fuera de .modal-actions (ej: calcular extras) */
+.btn-block {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.btn-block:hover {
+    transform: translateY(-2px);
+}
+.btn-block:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== LOADING: spinner inline en botones (IA / DB) ===== */
+.btn-spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+.btn-secondary .btn-spinner {
+    border-color: var(--coipo-border-strong);
+    border-top-color: var(--coipo-text);
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== TOASTS: avisos de la app (siempre por encima de la bottom-nav) ===== */
+.toast-notification {
+    position: fixed;
+    bottom: 112px; /* deja libre la nav flotante */
+    left: 14px;
+    right: 14px;
+    margin: 0 auto;
+    max-width: 430px;
+    background: var(--coipo-card, #fff);
+    color: var(--coipo-text);
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    z-index: 10000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1), opacity 0.22s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(26px);
+    overflow: hidden;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
+    touch-action: pan-y;
+}
+.toast-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.toast-notification.toast-arrastrando {
+    transition: none; /* el dedo maneja la posición 1:1 */
+}
+
+.toast-mensaje {
+    flex: 1;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Icono: círculo tintado con glifo simple (sin emojis) */
+.toast-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.86rem;
+    font-weight: 800;
+    line-height: 1;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Colores por tipo — tintes suaves de la paleta Coipo */
+.toast-notification.success .toast-icon { background: rgba(163, 177, 138, 0.22); color: #55702F; }
+.toast-notification.error   .toast-icon { background: rgba(224, 122, 95, 0.16);  color: #BC5236; }
+.toast-notification.warning .toast-icon { background: rgba(242, 204, 143, 0.35); color: #93721F; }
+.toast-notification.info    .toast-icon { background: rgba(129, 178, 154, 0.22); color: #47795F; }
+
+/* Acción del aviso (p. ej. "Deshacer" tras borrar por gesto) */
+.toast-accion {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    margin: -6px -4px -6px 0;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: var(--coipo-primary, #81B29A);
+    cursor: pointer;
+    border-radius: 8px;
+    letter-spacing: 0.2px;
+}
+.toast-accion:active { opacity: 0.7; }
+.toast-accion:focus-visible {
+    outline: 2px solid var(--coipo-primary, #81B29A);
+    outline-offset: 2px;
+}
+
+/* Barra de vida del aviso */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+.toast-progress-bar {
+    width: 100%;
+    height: 100%;
+    transform-origin: left;
+    animation: shrink 2.6s linear forwards;
+}
+.toast-notification.success .toast-progress-bar { background: var(--fat-color, #A3B18A); }
+.toast-notification.error   .toast-progress-bar { background: #E07A5F; }
+.toast-notification.warning .toast-progress-bar { background: #E3B23C; }
+.toast-notification.info    .toast-progress-bar { background: var(--coipo-primary, #81B29A); }
+
+@keyframes shrink {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+@media (max-width: 400px) {
+    .toast-notification {
+        bottom: 106px;
+        padding: 11px 14px;
+        font-size: 0.85rem;
+        gap: 10px;
+    }
+    .toast-progress { height: 3px; }
+}
+
+/* ===== SKELETON: carga de la lista de recetas ===== */
+.skeleton-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--coipo-border);
+}
+.skeleton-linea {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s ease-in-out infinite;
+}
+.skeleton-ancho-60 { width: 60%; }
+.skeleton-ancho-40 { width: 40%; }
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaLogueado() {
+      return request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Usuarios: cada usuario solo lee/escribe SU perfil
+    // (usuarios/{uid} y todas sus subcolecciones: recetas,
+    //  ingestas_diarias, resumen_diario)
+    // ─────────────────────────────────────────────────────────
+    match /usuarios/{uid} {
+      allow read, write: if estaLogueado() && request.auth.uid == uid;
+
+      match /{subcoleccion}/{docId} {
+        allow read, write: if estaLogueado() && request.auth.uid == uid;
+      }
+
+      match /{subcoleccion}/{docId}/{subsubcoleccion}/{subdocId} {
+        allow read, write: if estaLogueado() && request.auth.uid == uid;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Base global de productos (escáner) e ingredientes (caché):
+    // solo usuarios autenticados. Cualquier logueado puede
+    // leer/escribir porque es una base compartida de la app.
+    // ─────────────────────────────────────────────────────────
+    match /productos_globales/{barcode} {
+      allow read: if estaLogueado();
+      allow create, update: if estaLogueado();
+      allow delete: if false;
+    }
+
+    match /ingredientes_base/{ingredienteId} {
+      allow read: if estaLogueado();
+      allow create, update: if estaLogueado();
+      allow delete: if false;
+    }
+
+    // Todo lo demás: denegado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

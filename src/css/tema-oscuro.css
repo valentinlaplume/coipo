@@ -1,0 +1,108 @@
+/* src/css/tema-oscuro.css — se carga el ÚLTIMO para poder sobrescribir los :root */
+/* Selector html[data-tema] (0,1,1) gana a :root (0,1,0) sin importar el orden. */
+
+html[data-tema="oscuro"] {
+    color-scheme: dark; /* scrollbars, inputs nativos, etc. */
+
+    /* Fondos y superficies */
+    --coipo-bg: #14161A;
+    --coipo-card: #1C1F26;
+    --coipo-surface: #262A33;
+    --coipo-row: #22262E;
+    --coipo-chip-dark-bg: #3A3F4B;
+
+    /* Texto */
+    --coipo-text: #E9EAEF;
+    --coipo-text-light: #9CA1AB;
+    --coipo-text-muted: #9AA0AE;
+
+    /* Marcas Coipo — un poco más vivas para contraste sobre oscuro */
+    --coipo-primary: #88A37C;
+    --coipo-primary-dark: #B9D19B;
+    --coipo-accent: #C7AE97;
+
+    /* Sistema de mensajes (pasteles → tintes oscuros) */
+    --coipo-success: #A8BC90;
+    --coipo-error: #E28B72;
+    --coipo-warning: #E8C083;
+    --coipo-info: #8FBFA8;
+    --coipo-danger-strong: #FF6E63;
+    --coipo-success-text: #7DCF9E;
+    --coipo-info-text: #8FB0DC;
+    --coipo-info-strong: #8AB4E8;
+    --coipo-warning-strong: #E8C083;
+    --coipo-accent-text: #DCC3A4;
+
+    /* Semántica compartida */
+    --coipo-border: rgba(255, 255, 255, 0.10);
+    --coipo-border-strong: rgba(255, 255, 255, 0.24);
+    --coipo-overlay: rgba(0, 0, 0, 0.74);
+    --coipo-tint-error: rgba(224, 122, 95, 0.14);
+    --coipo-tint-warning: rgba(242, 204, 143, 0.12);
+    --coipo-tint-success: rgba(163, 177, 138, 0.13);
+    --coipo-tint-info: rgba(129, 178, 154, 0.13);
+    --coipo-tint-agua: rgba(120, 160, 210, 0.14);
+
+    /* Macros y sombras */
+    --prot-color: #FF7B5E;
+    --carb-color: #FFD633;
+    --fat-color: #3DDC6B;
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --skeleton-a: #262A33;
+    --skeleton-b: #2E333E;
+}
+
+/* Fondo base siempre del tema (evita blanco de más al cambiar de vista) */
+html[data-tema="oscuro"],
+html[data-tema="oscuro"] body {
+    background: var(--coipo-bg);
+}
+
+/* Scrollbars suaves en tonos oscuros */
+html[data-tema="oscuro"]::-webkit-scrollbar { width: 8px; height: 8px; }
+html[data-tema="oscuro"]::-webkit-scrollbar-thumb { background: #363B47; border-radius: 8px; }
+html[data-tema="oscuro"]::-webkit-scrollbar-track { background: transparent; }
+
+/* Selección de texto */
+html[data-tema="oscuro"] ::selection { background: rgba(147, 172, 135, 0.35); }
+::selection { background: rgba(141, 160, 129, 0.28); }
+
+/* Botón de Google: tarjeta oscura en vez de blanco puro */
+html[data-tema="oscuro"] .btn-google {
+    background: var(--coipo-card);
+    border-color: var(--coipo-border);
+    color: var(--coipo-text);
+}
+
+/* Chips/pills: en oscuro el fondo crema se vuelve tarjeta */
+html[data-tema="oscuro"] .pill {
+    background: var(--coipo-card);
+    border-color: var(--coipo-border);
+    color: var(--coipo-text);
+}
+html[data-tema="oscuro"] .pill.active {
+    background: var(--coipo-primary);
+    border-color: var(--coipo-primary);
+    color: #fff;
+}
+
+/* Rangos y checkboxes: acento visible sobre oscuro */
+html[data-tema="oscuro"] input[type="range"] { accent-color: var(--coipo-primary); }
+
+/* Glifos de los toasts: sus círculos tintados son oscuros ahora */
+html[data-tema="oscuro"] .toast-notification.success .toast-icon { color: #A9C77E; }
+html[data-tema="oscuro"] .toast-notification.error   .toast-icon { color: #F0917A; }
+html[data-tema="oscuro"] .toast-notification.warning .toast-icon { color: #EBBE74; }
+html[data-tema="oscuro"] .toast-notification.info    .toast-icon { color: #8FC7AC; }
+
+/* Aviso de receta: mismo ámbar, más suave sobre fondo oscuro */
+html[data-tema="oscuro"] .receta-aviso { background: rgba(242, 204, 143, 0.14); }
+
+/* Acciones de fila deslizadas (gestos): los fondos aclaran en oscuro,
+   así que el texto encima pasa a oscuro (contraste AA sobre el botón) */
+html[data-tema="oscuro"] .swipe-accion.neutro,
+html[data-tema="oscuro"] .swipe-accion.peligro {
+    color: #171a21;
+}
+
+/* El escáner y la splash ya son oscuros por diseño: nada que tocar. */

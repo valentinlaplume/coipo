@@ -1,0 +1,146 @@
+/* src/views/login/login.css */
+
+.login-container {
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    justify-content: center;
+    /* Aplicamos el fondo crema global aquí */
+    background-color: var(--coipo-bg); 
+}
+
+.login-header {
+    margin-bottom: 40px;
+}
+
+.login-title {
+    font-size: 2.8rem;
+    color: var(--coipo-primary); /* Tu verde sage */
+    letter-spacing: -2px;
+    line-height: 1.1;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    color: var(--coipo-text-muted);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+    padding-left: 4px;
+}
+
+/* INPUTS: Ahora con contraste real */
+.input-group input {
+    /* Usamos el color de superficie para que se note sobre el fondo crema */
+    background-color: var(--coipo-surface); 
+    border: 2px solid var(--coipo-surface); /* Borde del mismo color para dar grosor */
+    padding: 16px;
+    border-radius: var(--radius-md); 
+    font-size: 1rem;
+    color: var(--coipo-text);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    background-color: var(--coipo-card);
+    border-color: var(--coipo-primary);
+    box-shadow: 0 4px 12px rgba(141, 160, 129, 0.1);
+}
+
+/* BOTÓN PRIMARIO */
+.btn-primary {
+    background-color: var(--coipo-primary);
+    color: white;
+    border: none;
+    padding: 18px;
+    border-radius: var(--radius-md);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 4px 10px rgba(141, 160, 129, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 30px 0;
+    color: var(--coipo-text-muted);
+    font-weight: 600;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 2px solid var(--coipo-surface);
+}
+
+.login-divider span {
+    padding: 0 15px;
+}
+
+/* BOTÓN GOOGLE: Siguiendo la estética de los inputs */
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: var(--coipo-surface); /* Mismo gris que los inputs */
+    color: var(--coipo-text);
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-google:hover {
+    background-color: var(--coipo-surface); /* Un gris apenas más oscuro */
+}
+
+.btn-google img {
+    width: 22px;
+    height: 22px;
+}
+
+.login-footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--coipo-text-muted);
+}
+
+.login-footer a {
+    color: var(--coipo-primary);
+    text-decoration: none;
+    font-weight: 800;
+}
