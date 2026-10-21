@@ -26,9 +26,8 @@ No es consejo médico: el plan es una estimación con fórmulas estándar.
 ## 2. Stack y comandos
 
 - **Front**: Vite 8 + JS vanilla (sin framework ni React). Firebase se importa
-  desde el **CDN gstatic 10.8.1** (`src/firebase-config.js`) — el paquete npm
-  `firebase` de `package.json` **no se usa** (queda historial; no migrarlo a
-  medias).
+  desde el **CDN gstatic 10.8.1** (`src/firebase-config.js`); el paquete npm
+  `firebase` ya no está instalado (no se usa en el bundle).
 - **Backend**: Netlify Functions en `netlify/functions/*.js` (CommonJS) +
   Firestore. Auth con email/password y Google popup.
 - **IA**: Groq, exclusivamente server-side (nunca keys en el bundle).
@@ -102,10 +101,8 @@ src/services/ai/groq.service.js        Orquestador: analizarComida (fase 1
                          estimarNutrientesPor100g; tipos 'imagen' y 'busqueda'
                          implementados pero sin UI.
 src/services/ai/schemas.js / prompts.js  Esquemas JSON y system prompts que el
-                         cliente manda para los tipos no-asistente.
-src/services/ai/* copy.js, prompts-sugerencias.js  Archivos MUERTOS (no se
-                         importan; el prompt real del asistente es
-                         prompts/sugerencias_system.txt).
+                         cliente manda para los tipos no-asistente; el prompt
+                         real del asistente es prompts/sugerencias_system.txt.
 src/services/db/meal.service.js       Firestore de ingestas: crearRegistroComida
                          (fase 1), enriquecerRegistroConMicros (fase 2: solo
                          escritura en Firestore, sin IA), eliminar/restaurar
@@ -147,7 +144,8 @@ tests/*.mjs                 node --test: buscar-alimentos (34), openfoodfacts
                          estilos-base (7).
 AGENTS.md + .agents/skills/ui-coach/SKILL.md  Reglas para agentes: OBLIGATORIO
                          leer la skill antes de tocar CSS/UI.
-functions/ (raíz)           LEGACY de Firebase Functions (no se usa con Netlify).
+firebase.json              Solo `firestore.rules` (la app y el backend viven en
+                         Netlify; sin Hosting ni Functions de Firebase).
 notas.txt                   Notas sueltas de onboarding (histórico).
 ```
 
@@ -375,6 +373,9 @@ Orden de fuentes (IA nunca es la primera):
   "1 porción (X g)"; si el producto no trae porción, 100 g.
 - 92 tests en verde y `npm run build` OK. `dist/` es artefacto de build: está
   en `.gitignore` y fuera del índice de Git (la carpeta local se conserva).
+- Limpieza: sin archivos `* copy.js`/`prompts-sugerencias.js`, sin el
+  directorio legacy `functions/` ni el paquete npm `firebase`. `firebase.json`
+  solo conserva `firestore.rules` (Hosting y Functions se gestionan en Netlify).
 
 **A medias / pendientes conocidos**:
 
@@ -384,10 +385,6 @@ Orden de fuentes (IA nunca es la primera):
   calendario.
 - Tipos IA `imagen` y `busqueda` implementados en `groq.service.js` pero sin
   UI que los use (candidatos: foto de comida o búsqueda IA como fallback).
-- Archivos muertos a limpiar: `src/services/ai/_prompts copy.js`,
-  `src/services/ai/_schemas copy.js`, `src/services/ai/prompts-sugerencias.js`,
-  paquete npm `firebase` sin usar, directorio raíz `functions/` (legacy
-  Firebase).
 - **Micros incompletos en productos**: OFF rara vez trae los 10 micros; los
   que faltan quedan `null` a propósito (decisión: no estimarlos con IA). Si se
   quiere el set completo, habría que estimarlo y marcar el origen del dato.
