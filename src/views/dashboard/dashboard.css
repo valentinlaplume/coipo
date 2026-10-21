@@ -1685,3 +1685,199 @@ summary.micros-summary-title {
     border-width: 0 !important;
     transition: all 0.25s ease;
 }
+/* ─────────────────────────────────────────────────────────────
+   BUSCADOR DE ALIMENTOS (Tus productos + Open Food Facts)
+   Vive como SECCIÓN 1️⃣ dentro de la hoja "Nueva Ingesta"
+   (index.html) — los estilos .off-* son compartidos.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Fila de búsqueda ────────────────────────────────────────────────────────
+   Clases PROPIAS (.search-*): no heredan nada de los estilos viejos del modal
+   de OFF, así el input siempre se queda con el ancho que sobra. */
+.search-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Columna del input: crece con todo lo que sobra y deja sitio a la ✕,
+   que va APILADA encima (no le come ancho al input) */
+.search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.search-input {
+    width: 100%;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 40px 0 12px;          /* 40px a la derecha: aire para la ✕ */
+    font-size: 1rem;
+    border: 1px solid var(--coipo-surface);
+    border-radius: 12px;
+    background: var(--coipo-bg);
+    color: var(--coipo-text);
+}
+.search-input:focus { outline: 2px solid var(--coipo-accent); outline-offset: 1px; }
+
+/* El ✕ nativo del input[type=search] duplicaría el nuestro */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+/* ✕ de limpiar: DENTRO del input, a la derecha, sin achicarlo */
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--coipo-surface);
+    color: var(--coipo-text-muted);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1;
+}
+.search-clear:active { background: var(--coipo-accent); color: #fff; }
+
+/* Oculta mientras el HTML la traiga marcada (estado inicial: sin texto)… */
+.search-clear[hidden] { display: none; }
+/* …y se muestra sola en cuanto el input tiene texto, con puro CSS */
+.search-field .search-input:not(:placeholder-shown) ~ .search-clear { display: grid; }
+
+/* Botón «Buscar»: ancho propio, no se comprime ni crece */
+.search-btn {
+    flex: 0 0 auto;
+    height: 44px;
+    padding: 0 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--coipo-primary);
+    color: #fff;
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.search-btn:active { filter: brightness(0.92); }
+
+/* Estado: spinner / mensajes / atajos (no bloquea el input) */
+.off-estado {
+    min-height: 1.2rem;
+    margin-top: 8px;
+    font-size: 0.82rem;
+    color: var(--coipo-text-muted);
+}
+
+.off-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    vertical-align: -2px;
+    border: 2px solid var(--coipo-surface);
+    border-top-color: var(--coipo-accent);
+    border-radius: 50%;
+    animation: off-girar 0.8s linear infinite;
+}
+@keyframes off-girar { to { transform: rotate(360deg); } }
+
+/* Resultados: lista scrolleable con foto + nombre + marca + kcal/100 g */
+.off-resultados {
+    margin-top: 8px;
+    overflow-y: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+}
+
+.off-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 8px;
+    border: none;
+    background: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--coipo-text);
+}
+.off-fila:active { background: var(--coipo-surface); }
+
+.off-fila img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--coipo-surface);
+    flex-shrink: 0;
+}
+
+.off-fila-texto { flex: 1; min-width: 0; }
+
+.off-fila-nombre {
+    display: block;          /* así el recorte con … funciona (en inline no) */
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.off-fila-marca {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--coipo-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.off-fila-kcal {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--coipo-accent-text);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Atajos cuando no hay resultados: Estimar con IA / Cargar manual */
+.off-acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.off-acciones button { flex: 1; min-width: 130px; font-size: 0.85rem; padding: 10px; }
+
+/* Crédito de los datos: "Tus productos" y/o "Datos de Open Food Facts" */
+.off-fuente {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--coipo-text-muted);
+}
+.off-fuente a {
+    color: var(--coipo-accent-text);
+    text-decoration: none;
+    font-weight: 600;
+}
+.off-fuente a:active { text-decoration: underline; }
+.off-fuente-sep { opacity: 0.6; }
+
+/* Contenedor del crédito bajo la lista de coincidencias: si no hay
+   resultados, no ocupa un solo píxel */
+.off-fuente-slot:not(:empty) { margin-top: 9px; }
+
+/* Tema oscuro */
+[data-tema='oscuro'] .off-fila:active { background: #23262C; }

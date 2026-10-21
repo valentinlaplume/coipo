@@ -1,7 +1,8 @@
 // src/services/ai/prompts-sugerencias.js
-// System prompt del asistente de sugerencias. Archivo aparte: no está
-// hardcodeado dentro del servicio de llamada. Se mantiene como módulo
-// (convención del proyecto: ver prompts.js) para no requerir un fetch.
+// ⚠️ La fuente de verdad de este prompt es prompts/sugerencias_system.txt:
+//    la lee el servidor (netlify/functions/sugerencias.js) y es lo que usa el
+//    modelo. Este módulo queda solo como referencia histórica en el cliente —
+//    si lo cambiás, cambialo también en el .txt (o borrá este archivo).
 
 export const PROMPT_SUGERENCIAS = `# ROL
 Sos el asistente de sugerencias de una app de conteo de calorías. Tu única función es ayudar al usuario a decidir qué comer a continuación, usando los datos que recibís. No sos nutricionista ni médico.

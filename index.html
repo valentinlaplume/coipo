@@ -43,21 +43,84 @@
     <div id="app"></div>
     
     
-    <!-- Modal de Registro de Comida -->
-    <div id="modal-registro" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-height: 88vh; overflow-y: auto;">
-            <h3>Nueva Ingesta</h3>
-            <p style="color: var(--coipo-text-muted); font-size: 0.9rem;">Contale a Coipo qué comiste para calcular los macros.</p>
-            
-            <textarea id="texto-comida" placeholder="Ej: Una ensalada César con pollo y un vaso de agua..."></textarea>
+    <!-- ═══ NUEVA INGESTA — hoja a pantalla completa (mobile-first) ═══════════
+         Orden de la UX: 1) buscar el producto (sin IA) → 2) receta (sin IA)
+         → 3) describir y "Analizar Comida con IA" (último: gasta cuota).
+         La búsqueda de alimento vive DENTRO de esta hoja: las coincidencias
+         salen en un div con scroll propio, sin tapar el resto del formulario. -->
+    <div id="modal-registro" class="modal-overlay ingesta-overlay" style="display: none;">
+        <div class="modal-content ingesta-modal">
 
-            <!-- Atajo: si era una receta guardada, ir directo al selector -->
-            <button id="elegir-receta-modal" class="btn-secondary btn-block" style="margin: 10px 0 12px;">🍲 ¿Era una receta? Elegirla de Mis Recetas</button>
+            <header class="ingesta-header">
+                <div class="ingesta-header-texto">
+                    <h3>Nueva Ingesta</h3>
+                    <p>Encontrá el producto o usá una receta; la IA es el último paso.</p>
+                </div>
+                <button type="button" id="cerrar-ingesta" class="ingesta-cerrar" aria-label="Cerrar">✕</button>
+            </header>
 
-            <div class="modal-actions">
-                <button id="cancelar-modal" class="btn-secondary">Cancelar</button>
-                <button id="confirmar-modal" class="btn-primary">Analizar Comida</button>
+            <div class="ingesta-cuerpo">
+
+                <!-- 1️⃣ BUSCAR ALIMENTO (Tus productos + Open Food Facts) -->
+                <section class="ingesta-seccion">
+                    <div class="ingesta-seccion-titulo">
+                        <span class="ingesta-icono" aria-hidden="true">🔍</span>
+                        <span>Buscar alimento</span>
+                        <span class="ingesta-chip ingesta-chip-rapido">Más rápido</span>
+                    </div>
+                    <p class="ingesta-seccion-hint">Primero en Tus productos (los que cargaste a mano o con IA) y después en Open Food Facts, con prioridad para los de Argentina.</p>
+
+                    <!-- Fila de búsqueda: input flexible + botón fijo; la ✕ vive DENTRO -->
+                    <form id="buscar-alimento-form" autocomplete="off">
+                        <div class="search-row">
+                            <div class="search-field">
+                                <input class="search-input" type="search" id="buscar-alimento-input"
+                                       placeholder="Ej: barrita proteica integra" aria-label="Nombre del alimento">
+                                <button class="search-clear" type="button" id="buscar-alimento-limpiar" aria-label="Limpiar" hidden>✕</button>
+                            </div>
+                            <button class="search-btn" type="button" id="buscar-alimento-boton">Buscar</button>
+                        </div>
+                    </form>
+
+                    <!-- Estado: spinner, atajos si no hay resultados, errores -->
+                    <div id="buscar-alimento-estado" class="off-estado" aria-live="polite"></div>
+
+                    <!-- Coincidencias: lista con scroll propio (no ocupa la hoja entera) -->
+                    <div id="buscar-alimento-resultados" class="off-resultados" role="listbox" aria-label="Resultados"></div>
+
+                    <!-- Crédito de los datos, siempre visible bajo la lista -->
+                    <div id="buscar-alimento-fuente" class="off-fuente-slot" aria-live="polite"></div>
+                </section>
+
+                <!-- 2️⃣ RECETA (cálculo local, sin IA) -->
+                <section class="ingesta-seccion">
+                    <div class="ingesta-seccion-titulo">
+                        <span class="ingesta-icono" aria-hidden="true">🍲</span>
+                        <span>¿Era una receta?</span>
+                        <span class="ingesta-chip">Al instante</span>
+                    </div>
+                    <p class="ingesta-seccion-hint">Si ya la guardaste en Mis Recetas, sale al toque con sus macros.</p>
+                    <button id="elegir-receta-modal" class="btn-secondary btn-block ingesta-btn">Elegir de Mis Recetas</button>
+                </section>
+
+                <!-- 3️⃣ DESCRIPCIÓN + IA (lo último: gasta recursos) -->
+                <section class="ingesta-seccion ingesta-seccion-ia">
+                    <div class="ingesta-seccion-titulo">
+                        <span class="ingesta-icono" aria-hidden="true">✍️</span>
+                        <span>Contale a Coipo</span>
+                        <span class="ingesta-chip ingesta-chip-ia">Gasta IA</span>
+                    </div>
+                    <p class="ingesta-seccion-hint">Último recurso: la IA gasta cuota de la API. Si encontrás el producto arriba o es una receta, es más rápido y preciso.</p>
+                    <textarea id="texto-comida" placeholder="Ej: Una ensalada César con pollo y un vaso de agua..."></textarea>
+                </section>
+
             </div>
+
+            <footer class="ingesta-pie">
+                <button type="button" id="cancelar-modal" class="btn-secondary ingesta-btn-secundario">Cancelar</button>
+                <button type="button" id="confirmar-modal" class="btn-primary ingesta-btn-primario">🧠 Analizar Comida con IA</button>
+            </footer>
+
         </div>
     </div>
 
@@ -191,6 +254,28 @@
         </div>
     </div>
 
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         CONFIG DE FIREBASE (opcional)
+         Con Vite no hace falta nada: `npm run dev` o `npm run build` leen
+         .env y dejan los valores ya embebidos en el bundle.
+         Solo si servís este HTML SIN VITE (Firebase Hosting, Live Server,
+         file://), descomentá el bloque de abajo y pegá tu config PÚBLICA
+         (los mismos valores de .env con prefijo VITE_).
+         Nunca pegues acá claves secretas (ni GROQ_API_KEYS ni nada similar):
+         esto es HTML público.
+
+    <script>
+        window.__COIPO_FIREBASE__ = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+    </script>
+    ═══════════════════════════════════════════════════════════════════ -->
 
     <script type="module" src="./src/main.js"></script>
 

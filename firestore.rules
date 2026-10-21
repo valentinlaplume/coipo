@@ -9,7 +9,8 @@ service cloud.firestore {
     // ─────────────────────────────────────────────────────────
     // Usuarios: cada usuario solo lee/escribe SU perfil
     // (usuarios/{uid} y todas sus subcolecciones: recetas,
-    //  ingestas_diarias, resumen_diario)
+    //  ingestas_diarias, resumen_diario, productos (los que
+    //  cargó a mano o estimó con IA y encuentra al buscar))
     // ─────────────────────────────────────────────────────────
     match /usuarios/{uid} {
       allow read, write: if estaLogueado() && request.auth.uid == uid;

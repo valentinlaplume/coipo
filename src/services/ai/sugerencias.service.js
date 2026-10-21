@@ -1,23 +1,22 @@
 // src/services/ai/sugerencias.service.js
 // ÚNICO punto de llamada a la IA para el asistente de sugerencias.
 // Aislado del resto de la app: la vista solo llama a `consultarSugerencias(payload)`.
-// Usa las mismas GROQ keys gratis y el mismo key manager que groq.service.js.
 //
-// Nota sobre max_tokens: el spec pedía 200–300, pero openai/gpt-oss-20b "razona"
-// antes de responder y esas razonas consumen los tokens de salida (ver comentario
-// en groq.service.js sendGroqRequest). Con 300 el JSON queda truncado. Usamos un
-// presupuesto chico pero suficiente; la respuesta real sigue siendo corta.
+// Sin keys ni llamadas directas a Groq en el cliente: la consulta sale a
+// /api/sugerencias con el ID token de Firebase Auth (ver ia-client.js). El
+// servidor usa el system prompt de prompts/sugerencias_system.txt, rota
+// keys/modelos y devuelve el JSON ya parseado.
+//
+// Nota sobre max_tokens (histórica): openai/gpt-oss-20b "razona" antes de
+// responder y esas razonas consumen los tokens de salida; con presupuestos
+// chicos el JSON venía truncado. El servidor reintenta una vez con más
+// presupuesto si la respuesta viene vacía o cortada.
 
-import { groqKeyManager } from './groq.service.js';
-import { PROMPT_SUGERENCIAS } from './prompts-sugerencias.js';
+import { pedirIA, estadoIA } from './ia-client.js';
 import { parsearRespuestaIA, claveCache } from '../../utils/sugerencias-logic.js';
 
-const MODELO = 'openai/gpt-oss-20b';   // rápido, gratis, JSON confiable
-const TEMPERATURA = 0.2;               // baja: respuestas consistentes
-const MAX_TOKENS = 1500;
-const TIMEOUT_MS = 12000;
-const MAX_REINTENTOS_API = 3;          // rotación de keys / 429 / timeout
-const MAX_INTENTOS_JSON = 2;           // original + 1 reintento si el JSON es inválido
+const MAX_REINTENTOS_API = 3;          // errores transitorios de red/timeout (la rotación de keys la hace el servidor)
+const MAX_INTENTOS_JSON = 2;           // original + 1 reintento si el JSON no valida
 const ENFRIAMIENTO_MS = 3000;          // rate limit por usuario (cliente)
 const CACHE_MAX = 20;
 
@@ -29,73 +28,30 @@ const MSJ = {
     saturado:  'El asistente está saturado. Probá de nuevo en un minuto.',
     conexion:  'No pude conectar con el asistente. Revisá tu conexión y probá de nuevo.',
     respuesta: 'No pude entender la respuesta. Probá una vez más.',
-    limitado:  'Demasiadas consultas por ahora. Esperá un momento y volvé a intentar.'
+    limitado:  'Demasiadas consultas por ahora. Esperá un momento y volvé a intentar.',
+    sesion:    'Tu sesión expiró. Entrá de nuevo para continuar.'
 };
 
-// ── Llamada HTTP a Groq con rotación de keys (patrón de groq.service.js) ──
-const llamarGroq = async (contenidoUsuario) => {
+// ── Llamada al backend /api/sugerencias (Bearer = ID token de Firebase Auth) ──
+// El servidor rota keys/modelos y aplica el timeout; acá solo reintentamos
+// ante errores transitorios de red.
+const llamarIA = async (contenidoUsuario) => {
+    if (estadoIA.allOnCooldown()) throw new Error('SATURADO');
+
     let ultimoError = null;
-
     for (let i = 0; i < MAX_REINTENTOS_API; i++) {
-        if (groqKeyManager.allOnCooldown()) break;
-        const key = groqKeyManager.getCurrentKey();
-        if (!key) break;
-
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${key}`
-                },
-                body: JSON.stringify({
-                    model: MODELO,
-                    temperature: TEMPERATURA,
-                    max_tokens: MAX_TOKENS,
-                    messages: [
-                        { role: 'system', content: PROMPT_SUGERENCIAS },
-                        { role: 'user', content: contenidoUsuario }
-                    ]
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (response.status === 429) {
-                groqKeyManager.markRateLimited(key);
-                ultimoError = 'rate_limit';
-                continue;
-            }
-            if (response.status === 401 || response.status === 403) {
-                groqKeyManager.markPermanentFail(key);
-                ultimoError = 'auth';
-                continue;
-            }
-            if (!response.ok) {
-                const body = await response.text().catch(() => '');
-                console.warn(`⚠️ [Sugerencias] Groq ${response.status}:`, body.slice(0, 200));
-                ultimoError = `http_${response.status}`;
-                continue;
-            }
-
-            const json = await response.json();
-            groqKeyManager.incrementRequest();
-            const contenido = json?.choices?.[0]?.message?.content;
-            if (!contenido || !String(contenido).trim()) {
-                ultimoError = 'vacia';
-                continue;
-            }
-            return String(contenido);
+            return await pedirIA({ tipo: 'sugerencias', userContent: contenidoUsuario });
         } catch (e) {
-            ultimoError = e?.name === 'AbortError' ? 'timeout' : 'red';
+            ultimoError = e.message;
+            // 429 (sin keys disponibles), sesión inválida o sin sesión:
+            // reintentar al instante no resuelve nada.
+            if (e.message === 'SATURADO' ||
+                e.message === 'SIN_SESION' ||
+                e.message === 'SESION_INVALIDA') break;
         }
     }
-
-    if (ultimoError === 'rate_limit') throw new Error('RATE_LIMIT');
-    throw new Error('SIN_RESPUESTA');
+    throw new Error(ultimoError || 'RED');
 };
 
 // ── Extraer JSON tolerante (backticks, texto alrededor) ──────────────────
@@ -144,14 +100,17 @@ export const consultarSugerencias = async (payload) => {
     for (let intento = 0; intento < MAX_INTENTOS_JSON && !parseOk; intento++) {
         let respuesta;
         try {
-            respuesta = await llamarGroq(contenido);
+            respuesta = await llamarIA(contenido); // JSON ya parseado por el servidor
         } catch (e) {
-            if (e.message === 'RATE_LIMIT') throw new Error(MSJ.limitado);
-            if (groqKeyManager.allOnCooldown()) throw new Error(MSJ.saturado);
+            if (e.message === 'SATURADO') throw new Error(MSJ.limitado);
+            if (e.message === 'SIN_SESION' || e.message === 'SESION_INVALIDA') throw new Error(MSJ.sesion);
+            if (estadoIA.allOnCooldown()) throw new Error(MSJ.saturado);
             throw new Error(MSJ.conexion);
         }
         try {
-            resultado = parsearRespuestaIA(extraerJSON(respuesta));
+            resultado = parsearRespuestaIA(
+                typeof respuesta === 'object' && respuesta !== null ? respuesta : extraerJSON(respuesta)
+            );
             parseOk = true;
         } catch {
             console.warn(`⚠️ [Sugerencias] JSON inválido (intento ${intento + 1})`);

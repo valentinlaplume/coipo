@@ -2,11 +2,20 @@
 // Buscador de productos en OpenFoodFacts con SIMILITUD (mejor coincidencia).
 // Sin dependencias de Firebase → utilizable desde cualquier servicio (Groq, etc.).
 //
+// El navegador NO puede llamar a OFF directamente (sin CORS + 503 de
+// Cloudflare), así que la búsqueda va por el backend propio:
+// GET /api/openfoodfacts?q=... (netlify/functions/openfoodfacts.js), que
+// aguanta el Bearer de Firebase Auth y hace fallback entre mirrors.
+//
 // Flujo: recibe un texto tipo "Fideos Matarazzo Proteína Plus (cocidos)",
 // lo limpia (paréntesis, estado de cocción, stopwords), busca en OFF y
 // devuelve el producto cuyo nombre+marca más se parezca (score de tokens),
 // SOLO si la coincidencia es suficiente y trae macros completas.
 // Si no hay buena coincidencia → null (el llamador mantiene su estimación).
+
+import { obtenerToken } from './ai/ia-client.js';
+
+export const ENDPOINT_OFF = '/api/openfoodfacts';
 
 const TIMEOUT_MS = 5000;
 // Mínimo de palabras clave del usuario que deben aparecer en el producto OFF.
@@ -44,18 +53,26 @@ const num = (v) => (typeof v === 'number' && !isNaN(v) ? v : 0);
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-// Fetch JSON con timeout. Devuelve null ante error o respuesta HTML
-// (OFF responde 503/HTML cuando está saturado o limita consultas seguidas):
-// en 429/5xx reintenta UNA vez tras 1,2s; timeout/red no se reintenta
-// (no queremos demorar el registro de una comida).
-const fetchJSON = async (url) => {
+// Fetch JSON con timeout vía el backend propio. Devuelve null ante error,
+// sin sesión o respuesta no-JSON (OFF responde 503/HTML cuando está saturado
+// o limita consultas seguidas): en 429/5xx reintenta UNA vez tras 1,2s;
+// timeout/red no se reintenta (no queremos demorar el registro de una comida).
+const fetchJSON = async (consulta) => {
+    const token = await obtenerToken();
+    if (!token) return null; // sin sesión no gastamos la cuota del proxy
+
+    const url = `${ENDPOINT_OFF}?q=${encodeURIComponent(consulta)}&page_size=20`;
+
     for (let intento = 0; intento < 2; intento++) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
         try {
             const res = await fetch(url, {
                 signal: controller.signal,
-                headers: { 'Accept': 'application/json' }
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
             });
             const contentType = res.headers.get('content-type') || '';
             if (res.ok && contentType.includes('json')) {
@@ -139,11 +156,8 @@ export const buscarProductoPorNombreSimilar = async (texto, marca = null) => {
         const fase = fasesUnicas[qi];
         // OFF limita ráfagas: pausamos entre consultas
         if (qi > 0) await sleep(600);
-        const url = 'https://world.openfoodfacts.org/cgi/search.pl'
-            + `?search_terms=${encodeURIComponent(fase.consulta)}`
-            + '&search_simple=1&action=process&json=1&page_size=20';
 
-        const data = await fetchJSON(url);
+        const data = await fetchJSON(fase.consulta);
         if (!data?.products?.length) continue; // probamos con la consulta relajada
 
         const evaluados = data.products

@@ -1,4 +1,8 @@
 // src/services/ingredient-lookup.service.js
+// La llamada a OFF va por el backend propio (sin CORS y con fallback de
+// mirrors): GET /api/openfoodfacts?q=... con el Bearer de la sesión.
+import { obtenerToken } from './ai/ia-client.js';
+
 export const buscarIngredienteEnOFF = async (nombreIngrediente) => {
     // 1. Validar entrada
     if (!nombreIngrediente || typeof nombreIngrediente !== 'string') {
@@ -6,14 +10,23 @@ export const buscarIngredienteEnOFF = async (nombreIngrediente) => {
         return null;
     }
 
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(nombreIngrediente)}&search_simple=1&action=process&json=1&page_size=1`;
+    const token = await obtenerToken();
+    if (!token) {
+        console.warn('Sin sesión: no se busca en OFF');
+        return null;
+    }
+
+    const url = `/api/openfoodfacts?q=${encodeURIComponent(nombreIngrediente)}&page_size=1`;
     
     try {
         // 2. Agregar timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos
         
-        const res = await fetch(url, { signal: controller.signal });
+        const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         clearTimeout(timeoutId);
         
         // 3. Verificar status HTTP

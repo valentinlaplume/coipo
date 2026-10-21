@@ -193,6 +193,208 @@ body {
     margin-top: 2rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   NUEVA INGESTA — hoja a PANTALLA COMPLETA (mobile-first, mismo lenguaje
+   visual que el resto de Coipo: tarjetas redondeadas, paleta orgánica,
+   targets de ≥44 px y CTA de IA SIEMPRE al final del recorrido).
+   Orden UX: buscar producto → receta → describir y "Analizar con IA".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Overlay a sangre: sin margen, la hoja ocupa el alto completo.
+   En desktop la columna sigue midiendo lo mismo que #app (500 px). */
+.modal-overlay.ingesta-overlay {
+    padding: 0;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.modal-content.ingesta-modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 500px;
+    height: 100vh;
+    height: 100dvh;          /* alto real en móviles (barra del navegador) */
+    max-height: none;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+    overflow-y: auto;        /* el scroll es de la hoja: cabecera y pie quedan fijos */
+    overscroll-behavior: contain;
+}
+
+/* ── Cabecera fija: título + cierre a un toque (el gesto de arrastre vive
+      en la agarradera de gestos.css, por eso se le deja aire arriba) ────── */
+.ingesta-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 22px 16px 12px;
+    background: var(--coipo-bg);
+    border-bottom: 1px solid var(--coipo-border);
+}
+
+.ingesta-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    line-height: 1.25;
+    color: var(--coipo-text);
+}
+
+.ingesta-header p {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--coipo-text-muted);
+}
+
+.ingesta-cerrar {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 12px;
+    background: var(--coipo-surface);
+    color: var(--coipo-text-muted);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ingesta-cerrar:active { background: var(--coipo-accent); color: #fff; }
+
+/* ── Cuerpo: tarjetas de sección apiladas. No scrollea él, scrollea la hoja
+      (así la agarradera y el pie fijo funcionan como en el resto de Coipo) ─ */
+.ingesta-cuerpo {
+    flex: 1 0 auto;   /* crece si el contenido es corto; nunca se encoge (si no, la hoja cortaría las tarjetas) */
+    padding: 14px 14px 18px;
+}
+
+.ingesta-seccion {
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 12px;
+}
+.ingesta-seccion:last-child { margin-bottom: 0; }
+
+.ingesta-seccion-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--coipo-text);
+}
+.ingesta-icono { font-size: 1rem; line-height: 1; }
+
+/* Chips de estado: comunican el orden recomendado sin texto de más */
+.ingesta-chip {
+    margin-left: auto;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--coipo-surface);
+    color: var(--coipo-text);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.ingesta-chip-rapido { background: var(--coipo-tint-success); color: var(--coipo-primary-dark); }
+.ingesta-chip-ia { background: var(--coipo-tint-warning); color: var(--coipo-warning-strong); }
+
+.ingesta-cuerpo .ingesta-seccion-hint {
+    margin: 5px 0 11px;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--coipo-text-muted);
+}
+
+/* Botón de sección (receta): alto cómodo para el pulgar */
+.ingesta-btn {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* La IA va al FONDO de la hoja: textarea + su CTA en el pie */
+.ingesta-cuerpo #texto-comida {
+    height: 132px;
+    margin-bottom: 0;
+}
+
+/* ── Coincidencias de la búsqueda: lista con scroll PROPIO. Se acota para
+      nunca tapar el resto de la hoja; vacía no ocupa nada. ───────────────── */
+.ingesta-seccion .off-resultados {
+    max-height: min(38vh, 300px);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+/* Fila de búsqueda (input + ✕ + botón): reglas propias .search-* en dashboard.css */
+
+/* ── Pie fijo: Cancelar a la izquierda, la acción de IA a la derecha
+      (es la ÚLTIMA del recorrido y se queda al alcance del pulgar) ──────── */
+.ingesta-pie {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    gap: 10px;
+    padding: 11px 14px calc(11px + env(safe-area-inset-bottom));
+    background: var(--coipo-bg);
+    border-top: 1px solid var(--coipo-border);
+}
+
+.ingesta-pie button {
+    min-height: 50px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.ingesta-btn-secundario {
+    flex: 1 1 0;
+    background: var(--coipo-surface);
+    color: var(--coipo-text);
+}
+.ingesta-btn-secundario:active { background: var(--coipo-accent); color: #fff; }
+
+.ingesta-btn-primario {
+    flex: 2.2 1 0;
+    padding-inline: 8px;
+    background: var(--coipo-primary);
+    color: #fff;
+    line-height: 1.15;
+}
+.ingesta-btn-primario:hover { filter: brightness(0.93); transform: none; }
+.ingesta-btn-primario:active { filter: brightness(0.88); }
+.ingesta-btn-primario:disabled {
+    background: var(--coipo-text-muted);
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+}
+
+/* Pantallas angostas (≤360 px): el CTA baja de tamaño de fuente para no
+   partirse en dos renglones feos */
+@media (max-width: 360px) {
+    .ingesta-pie button { font-size: 0.87rem; }
+    .ingesta-seccion { padding: 12px; }
+}
+
 /* BOTON DE ELIMINAR INGESTA EN EL CARD VISUAL */
 
 /* Botón de borrar dentro de la tarjeta de comida */

@@ -19,6 +19,10 @@ import { crearRegistroComida, eliminarIngesta, restaurarIngesta, actualizarHidra
  } from '../../utils/receta-math.js';
 import { buscarProducto, calcularPorcion, guardarProducto
  } from '../../services/product-scanner.service.js';
+import { buscarAlimentos, productoDesdeResultado
+ } from '../../services/buscar-alimentos.service.js';
+import { buscarProductosUsuario, guardarItemsComoProductos, registrarUsoProducto
+ } from '../../services/productos-usuario.service.js';
 import { renderPerfil } from '../perfil/perfil.view.js';
 import { renderSugerencias } from '../sugerencias/sugerencias.view.js';
 import { elegirTema, temaGuardado } from '../../utils/tema.js';
@@ -150,7 +154,9 @@ export const textoError = (error, fallback) => {
 };
 
 // Modal propio para pedir gramos (nunca prompt() del navegador)
-export const pedirGramos = (titulo) => new Promise(resolve => {
+// valorInicial: p. ej. la porción de la etiqueta del producto (OFF la trae).
+export const pedirGramos = (titulo, valorInicial = 100) => new Promise(resolve => {
+    const valor = Number(valorInicial) > 0 ? Number(valorInicial) : 100;
     document.querySelectorAll('.toast-notification').forEach(t => t.remove()); // nada tapa el modal
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -159,7 +165,7 @@ export const pedirGramos = (titulo) => new Promise(resolve => {
         <div class="modal-content" style="width: 88%; max-width: 340px;">
             <h3 style="margin: 0 0 2px; font-size: 1.05rem;">¿Cuántos gramos comiste?</h3>
             <p style="margin: 0 0 12px; font-size: 0.82rem; color: var(--coipo-text-muted);">${esc(titulo)}</p>
-            <input type="number" id="pedir-gramos-input" inputmode="decimal" min="1" step="1" value="100"
+            <input type="number" id="pedir-gramos-input" inputmode="decimal" min="1" step="1" value="${esc(String(valor))}"
                 style="width: 100%; box-sizing: border-box; padding: 12px; font-size: 1.25rem; text-align: center;
                        font-weight: 700; border: 1px solid var(--coipo-surface); border-radius: 12px;
                        background: var(--coipo-bg); color: var(--coipo-text);">
@@ -189,7 +195,7 @@ export const pedirGramos = (titulo) => new Promise(resolve => {
         cerrar: () => cerrar(null),
         sucio: () => {
             const v = String(input.value).trim();
-            return v !== '' && v !== '100'; // '100' es el valor inicial: nada escrito
+            return v !== '' && v !== String(valor); // el valor inicial: nada escrito
         },
     });
 });
@@ -277,10 +283,12 @@ const activarGestosDeModales = () => {
         if (el) hacerDeslizable(el, ops);
     };
 
-    // Nueva Ingesta (formulario de texto) — tiene cambios sin guardar si escribió
+    // Nueva Ingesta (hoja completa: buscar producto → receta → IA) — sucio si
+    // dejó texto en la descripción O una consulta de búsqueda a medio camino
     registrar('#modal-registro', {
-        cerrar: '#cancelar-modal',
-        sucio: () => (document.getElementById('texto-comida')?.value || '').trim() !== '',
+        cerrar: '#cerrar-ingesta',
+        sucio: () => ((document.getElementById('texto-comida')?.value || '').trim() !== '' ||
+                      (document.getElementById('buscar-alimento-input')?.value || '').trim() !== ''),
     });
 
     // Confirmación de borrado — cancelar es la opción segura: nunca pide descartar
@@ -741,7 +749,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                                 <div class="meal-header-row">
                                     <div class="title-meta">
                                         <strong class="meal-title">¿Qué comiste ahora?</strong>
-                                        <p class="meal-subtitle">Registrar con Coipo IA</p>
+                                        <p class="meal-subtitle">Producto, receta o con IA</p>
                                     </div>
                                     <div class="meal-stats"><button class="add-btn-main">+</button></div>
                                 </div>
@@ -829,15 +837,36 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         };
     });
 
+    // ── Sección "Buscar alimento" (vive DENTRO de Nueva Ingesta) ────────────
+    const inputBuscar  = document.getElementById('buscar-alimento-input');
+    const estadoBuscar = document.getElementById('buscar-alimento-estado');
+    const listaBuscar  = document.getElementById('buscar-alimento-resultados');
+    const fuenteBuscar = document.getElementById('buscar-alimento-fuente');
+
+    const HINT_BUSQUEDA = 'Escribí al menos 3 letras y tocá «Buscar».';
+    const resetearBusqueda = () => {
+        if (inputBuscar) inputBuscar.value = '';
+        if (listaBuscar) listaBuscar.innerHTML = '';
+        if (estadoBuscar) estadoBuscar.innerHTML = HINT_BUSQUEDA;
+        if (fuenteBuscar) fuenteBuscar.innerHTML = '';
+    };
+
     // Modales: Registro IA — se abre desde la tarjeta "¿Qué comiste?" O desde el ➕ de la nav
     const modalIA = document.getElementById('modal-registro');
     const abrirModalRegistro = () => {
         document.getElementById('texto-comida').value = "";
+        // Cada apertura arranca con la búsqueda limpia: el usuario ve primero
+        // el campo de "Buscar alimento" y no coincidencias de la sesión anterior
+        resetearBusqueda();
         modalIA.style.display = "flex";
     };
     container.querySelector('#boton-registro-texto').onclick = abrirModalRegistro;
     const navRegistrar = container.querySelector('#nav-registrar');
     if (navRegistrar) navRegistrar.onclick = abrirModalRegistro;
+
+    // Cierre a un toque (✕ de la cabecera) — mismo camino que "Cancelar"
+    const btnCerrarIngesta = document.getElementById('cerrar-ingesta');
+    if (btnCerrarIngesta) btnCerrarIngesta.onclick = () => { modalIA.style.display = "none"; };
 
     document.getElementById('cancelar-modal').onclick = () => {
         modalIA.style.display = "none";
@@ -846,7 +875,12 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
     document.getElementById('confirmar-modal').onclick = async () => {
         const btn         = document.getElementById('confirmar-modal');
         const descripcion = document.getElementById('texto-comida').value.trim();
-        if (!descripcion) return;
+        if (!descripcion) {
+            // La IA es el ÚLTIMO camino: antes hay producto o receta
+            mostrarToast('Escribí qué comiste — o buscá un producto / elegí una receta', 'warning');
+            document.getElementById('texto-comida').focus();
+            return;
+        }
 
         const setTexto = ponerCargando(btn, 'Analizando...');
 
@@ -869,6 +903,12 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
             // Y la llamas así:
             const docId = await crearRegistroComida(userId, datosMacros, fechaActualSeleccionada, descripcion);
+
+            // Tus productos: cada item de esta comida (cargado a mano o
+            // estimado con IA) queda en la colección personal del usuario, así
+            // la próxima búsqueda por nombre lo encuentra ANTES que OFF
+            guardarItemsComoProductos(userId, datosMacros.items)
+                .catch(e => console.warn('⚠️ No se guardaron los productos propios:', e));
             
             delete cacheSemanal[dateKey];
             modalIA.style.display = "none";
@@ -895,6 +935,222 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             quitarCargando(btn);
         }
     };
+
+    // ── Búsqueda de alimento (Tus productos + Open Food Facts) ──────────────
+    // Sección 1️⃣ de la hoja "Nueva Ingesta": las coincidencias salen ahí
+    // mismo, en un div con scroll propio. El USUARIO dispara la búsqueda
+    // (botón «Buscar» o Enter): mientras escribe NO se pega ningún pedido a
+    // Open Food Facts. Al elegir un resultado: pedirGramos (modal propio) →
+    // regla de tres local (calcularPorcion, misma lógica que el escáner) →
+    // crearRegistroComida.
+    if (inputBuscar) {
+        let peticion = 0;      // turno: descarta respuestas viejas si el usuario repite o sigue tipeando
+        let buscando = null;   // consulta en vuelo (evita el doble disparo del mismo Enter/click)
+
+        // Cerrar = volver a la hoja completa (la búsqueda vive dentro)
+        const cerrarIngesta = () => { modalIA.style.display = 'none'; };
+
+        const accionesSinResultados = (consulta) => `
+            <div>Sin resultados para "<b>${esc(consulta)}</b>".</div>
+            ${atajosRegistrar()}`;
+
+        // Atajos siempre disponibles cuando NO hay nada que mostrar: la
+        // alternativa es cargarlo con IA o a mano (queda en "Tus productos")
+        const atajosRegistrar = () => `
+            <div class="off-acciones">
+                <button type="button" class="btn-primary" data-accion="ia">🧠 Estimar con IA</button>
+                <button type="button" class="btn-secondary" data-accion="manual">✏️ Cargar manual</button>
+            </div>`;
+
+        // Los atajos NO cambian de modal: bajan al último paso de la MISMA
+        // hoja (la sección de IA, al fondo). "Estimar" precarga la consulta;
+        // "manual" deja el textarea limpio para que escriba lo suyo.
+        const enfocarIA = (consulta) => {
+            const textarea = document.getElementById('texto-comida');
+            if (!textarea) return;
+            if (typeof consulta === 'string') textarea.value = consulta;
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => textarea.focus({ preventScroll: true }), 260);
+        };
+
+        const engancharAtajos = (consulta) => {
+            estadoBuscar.querySelector('[data-accion="ia"]')
+                ?.addEventListener('click', () => enfocarIA(consulta));
+            estadoBuscar.querySelector('[data-accion="manual"]')
+                ?.addEventListener('click', () => enfocarIA(null)); // que escriba lo suyo
+        };
+
+        const elegirAlimento = async (item) => {
+            if (!item) return;
+            const propio = item.fuente === 'propio';
+            const etiqueta = item.marca ? `${item.nombre} (${item.marca})` : item.nombre;
+            const origen = propio ? 'Tus productos' : 'Open Food Facts';
+
+            // Sugerimos la porción de la etiqueta si la trae (si no, 100 g)
+            const gramos = await pedirGramos(etiqueta, item.porcion_g || 100);
+            if (!gramos) return; // cancelado: sin toast, sin ruido
+
+            const producto = productoDesdeResultado(item);
+            const porcion = calcularPorcion(producto, gramos); // regla de tres, local, sin IA
+            if (!porcion) {
+                mostrarToast('No se pudieron calcular los macros del producto', 'error');
+                return;
+            }
+
+            try {
+                const fechaSeleccionada = document.querySelector('.day-item.active')?.dataset.date || dateKey;
+                await crearRegistroComida(userId, { items: [porcion] }, fechaSeleccionada,
+                    `${gramos} g de ${etiqueta} (${origen})`);
+
+                // Producto propio: sube en las próximas búsquedas por cuánto se usa
+                if (propio) registrarUsoProducto(userId, item.nombre, item.marca).catch(() => {});
+
+                delete cacheSemanal[fechaSeleccionada];
+                cerrarIngesta();
+                await renderDashboard(container, userData, fechaParaMostrar);
+                mostrarToast(`${gramos} g de "${item.nombre}" registrados`, 'success');
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            } catch (e) {
+                console.error('Error registrando alimento buscado:', e);
+                mostrarToast('No se pudo registrar — probá de nuevo', 'error');
+            }
+        };
+
+        const pintarResultados = (resultados, consulta) => {
+            listaBuscar.innerHTML = resultados.map((item, i) => `
+                <button type="button" class="off-fila" data-indice="${i}" role="option">
+                    ${item.imagen
+                        ? `<img src="${esc(item.imagen)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+                        : '<img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E" alt="">'}
+                    <span class="off-fila-texto">
+                        <span class="off-fila-nombre">${esc(item.nombre)}</span>
+                        <span class="off-fila-marca">${esc(item.marca || (item.fuente === 'propio' ? 'Tus productos' : 'Sin marca'))}</span>
+                    </span>
+                    <span class="off-fila-kcal">${Math.round(Number(item.kcal100) || 0)} kcal/100 g</span>
+                </button>`).join('');
+
+            estadoBuscar.innerHTML = `
+                <div>${resultados.length} resultado${resultados.length === 1 ? '' : 's'} — tocá uno para registrar</div>`;
+            if (fuenteBuscar) fuenteBuscar.innerHTML = pieDeFuente(resultados);
+
+            listaBuscar.querySelectorAll('.off-fila').forEach(btn => {
+                btn.onclick = () => elegirAlimento(resultados[Number(btn.dataset.indice)]);
+            });
+        };
+
+        // Crédito de los datos: "Tus productos" y/o "Datos de Open Food Facts"
+        // (con link) según de dónde salga cada resultado de la lista
+        const pieDeFuente = (resultados) => {
+            const hayPropios = resultados.some(r => r.fuente === 'propio');
+            const hayOFF = resultados.some(r => r.fuente !== 'propio');
+            if (!hayPropios && !hayOFF) return '';
+
+            const partes = [];
+            if (hayPropios) partes.push('<span>Tus productos cargados</span>');
+            if (hayOFF) {
+                partes.push('<span>Datos de <a href="https://openfoodfacts.org" target="_blank" '
+                    + 'rel="noopener noreferrer">Open Food Facts</a></span>');
+            }
+            return `<div class="off-fuente">${partes.join('<span class="off-fuente-sep">·</span>')}</div>`;
+        };
+
+        const ejecutarBusqueda = async (consulta, turno) => {
+            // 1️⃣ Tus productos (Firestore del usuario): se buscan PRIMERO
+            const propios = await buscarProductosUsuario(userId, consulta);
+            if (turno !== peticion) return; // el usuario siguió escribiendo: basura vieja
+
+            // 2️⃣ Open Food Facts (search-a-licious con respaldo de search.pl)
+            const r = await buscarAlimentos(consulta);
+            if (turno !== peticion) return;
+
+            const combinados = [...propios, ...(r.resultados || [])].slice(0, 15);
+            if (combinados.length) {
+                pintarResultados(combinados, consulta);
+                return;
+            }
+
+            // Nada que mostrar: se ofrecen las alternativas (IA / manual)
+            listaBuscar.innerHTML = '';
+            if (fuenteBuscar) fuenteBuscar.innerHTML = '';
+            if (r.estado === 'error') {
+                estadoBuscar.innerHTML = `
+                    <div>${esc(r.mensaje || 'No se pudo buscar. Probá de nuevo.')}</div>
+                    ${atajosRegistrar()}`;
+            } else {
+                estadoBuscar.innerHTML = accionesSinResultados(consulta);
+            }
+            engancharAtajos(consulta);
+        };
+
+        // Disparo EXPLÍCITO: botón «Buscar» o Enter en el input. Mientras el
+        // usuario escribe NO se pega ningún pedido a Open Food Facts.
+        const dispararBusqueda = () => {
+            const consulta = inputBuscar.value.trim().replace(/\s+/g, ' ');
+            if (consulta.length < 3) {
+                listaBuscar.innerHTML = '';
+                if (fuenteBuscar) fuenteBuscar.innerHTML = '';
+                estadoBuscar.innerHTML = consulta.length ? 'Escribí al menos 3 letras para buscar.' : HINT_BUSQUEDA;
+                return;
+            }
+            if (buscando === consulta) return; // esta misma consulta ya está en vuelo
+
+            buscando = consulta;
+            const turno = ++peticion;
+            // Spinner NO bloqueante: el input sigue usable mientras carga
+            estadoBuscar.innerHTML = '<span class="off-spinner" aria-hidden="true"></span>Buscando...';
+            listaBuscar.innerHTML = '';
+            if (fuenteBuscar) fuenteBuscar.innerHTML = '';
+            ejecutarBusqueda(consulta, turno).finally(() => {
+                if (buscando === consulta) buscando = null;
+            });
+        };
+
+        // Mientras escribe: solo avanza el hint e invalida la respuesta en vuelo
+        // (peticion++): los resultados ya no corresponden al texto actual.
+        // (Asignación directa, no addEventListener: este input es estático y se
+        //  re-renderiza el dashboard a cada rato — con listener se apilarían.)
+        inputBuscar.oninput = () => {
+            ++peticion;
+            const consulta = inputBuscar.value.trim();
+            listaBuscar.innerHTML = '';
+            if (fuenteBuscar) fuenteBuscar.innerHTML = '';
+            estadoBuscar.innerHTML = consulta.length < 3
+                ? (consulta.length ? 'Escribí al menos 3 letras para buscar.' : HINT_BUSQUEDA)
+                : 'Tocá «Buscar» o apretá Enter.';
+        };
+
+        // ✕ de limpiar (vive dentro del input): vacía el campo y dispara el
+        // MISMO handler de arriba, que ya invalida los resultados en vuelo y
+        // vuelve al hint
+        const btnLimpiar = document.getElementById('buscar-alimento-limpiar');
+        if (btnLimpiar) {
+            btnLimpiar.onclick = () => {
+                inputBuscar.value = '';
+                inputBuscar.dispatchEvent(new Event('input', { bubbles: true }));
+                inputBuscar.focus();
+            };
+            // La visibilidad la decide el CSS (:placeholder-shown); acá sólo
+            // sincronizamos el atributo hidden para los lectores de pantalla
+            const oninputPrevia = inputBuscar.oninput;
+            inputBuscar.oninput = (e) => {
+                if (oninputPrevia) oninputPrevia(e);
+                btnLimpiar.hidden = inputBuscar.value.trim() === '';
+            };
+        }
+
+        // Botón «Buscar» (type=button, no dispara submit): misma búsqueda de
+        // siempre. Enter sigue andando por el <form> de alrededor (onsubmit).
+        const btnBuscar = document.getElementById('buscar-alimento-boton');
+        if (btnBuscar) btnBuscar.onclick = dispararBusqueda;
+
+        const formularioBuscar = document.getElementById('buscar-alimento-form');
+        if (formularioBuscar) {
+            formularioBuscar.onsubmit = (e) => {
+                e.preventDefault();
+                dispararBusqueda();
+            };
+        }
+    }
 
     // Acordeón: mostrar/ocultar el detalle de ingredientes de cada tarjeta
     container.querySelectorAll('.meal-card .meal-detalle-toggle').forEach(btnDetalle => {

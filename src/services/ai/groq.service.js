@@ -1,6 +1,10 @@
 // src/ai/groq.service.js
+//
+// ⚠️ Sin keys en el cliente: todas las llamadas salen por /api/sugerencias con
+//    el ID token de Firebase Auth (ver ia-client.js). La rotación de keys y
+//    modelos vive en el servidor (netlify/functions/sugerencias.js), que rota
+//    ante 429 / 401 / 5xx / error de red / timeout de 10s.
 
-import { GROQ_API_KEYS } from '../../config/config.js';
 import {
     GROQ_ESQUEMA_RAPIDO,
     GROQ_ESQUEMA_MICROS,
@@ -10,102 +14,29 @@ import {
 } from './schemas.js';
 import { PROMPTS_SISTEMA } from './prompts.js'; // mismos prompts que Gemini
 import { buscarProductoPorNombreSimilar } from '../openfoodfacts.service.js';
+import { pedirIA, estadoIA } from './ia-client.js';
 
 // ==============================================================================
-// 1. API KEY MANAGER — idéntico al de Gemini en lógica
+// 1. ESTADO DE SATURACIÓN — interfaz histórica que usa el dashboard
+// Antes era el GroqKeyManager local (con las keys en el cliente). Ahora el
+// servidor avisa con 429 + Retry-After y estadoIA conserva ese estado.
 // ==============================================================================
-class GroqKeyManager {
-    constructor(apiKeys) {
-        this.apiKeys        = [...apiKeys];
-        this.currentIndex   = 0;
-        this.permanentFails = new Set();
-        this.cooldowns      = new Map();
-        this.requestCount   = 0;
-        this.RPM_LIMIT      = 28; // Groq free = 30 RPM, usamos 28 de margen
-    }
-
-    getCurrentKey() {
-        const ahora = Date.now();
-        for (let i = 0; i < this.apiKeys.length; i++) {
-            const idx = (this.currentIndex + i) % this.apiKeys.length;
-            const key = this.apiKeys[idx];
-            if (this.permanentFails.has(key)) continue;
-            if ((this.cooldowns.get(key) ?? 0) > ahora) continue;
-            this.currentIndex = idx;
-            return key;
-        }
-        return null;
-    }
-
-    allOnCooldown() {
-        const ahora = Date.now();
-        return this.apiKeys
-            .filter(k => !this.permanentFails.has(k))
-            .every(k => (this.cooldowns.get(k) ?? 0) > ahora);
-    }
-
-    msUntilNextKey() {
-        const ahora = Date.now();
-        const tiempos = this.apiKeys
-            .filter(k => !this.permanentFails.has(k))
-            .map(k => this.cooldowns.get(k) ?? 0);
-        return Math.max(0, Math.min(...tiempos) - ahora);
-    }
-
-    markRateLimited(key, ms = 62000) {
-        this.cooldowns.set(key, Date.now() + ms);
-        this.requestCount = 0;
-        this.currentIndex = (this.currentIndex + 1) % this.apiKeys.length;
-        console.warn(`⏳ [Groq] Key ...${key.slice(-6)} en cooldown por ${Math.ceil(ms/1000)}s`);
-    }
-
-    markPermanentFail(key) {
-        this.permanentFails.add(key);
-        this.currentIndex = (this.currentIndex + 1) % this.apiKeys.length;
-        console.error(`❌ [Groq] Key inválida removida: ...${key.slice(-6)}`);
-    }
-
-    getAvailableCount() {
-        const ahora = Date.now();
-        return this.apiKeys.filter(k =>
-            !this.permanentFails.has(k) &&
-            (this.cooldowns.get(k) ?? 0) <= ahora
-        ).length;
-    }
-
-    incrementRequest() {
-        if (++this.requestCount >= this.RPM_LIMIT) {
-            this.requestCount = 0;
-            this.currentIndex = (this.currentIndex + 1) % this.apiKeys.length;
-        }
-    }
-}
-
-export const groqKeyManager = new GroqKeyManager(GROQ_API_KEYS);
+export const groqKeyManager = {
+    allOnCooldown: () => estadoIA.allOnCooldown(),
+    msUntilNextKey: () => estadoIA.msUntilNextKey()
+};
 
 // ==============================================================================
-// 2. MODELOS — ordenados por velocidad y cuota
+// 2. TIPOS DE PETICIÓN — misma whitelist que netlify/functions/sugerencias.js
 // ==============================================================================
-// Modelos verificados contra GET /v1/models con la key real (oct 2026) ✓
-// ⚠️ NO usar: llama-3.3-70b / llama-3.1-8b (ahora "Enterprise" → 404 en keys
-//    normales) ni gemma2-9b-it (descontinuado → 400).
-const GROQ_MODELS = [
-    "openai/gpt-oss-20b",      // #1 — ~1000 t/s, production, JSON confiable
-    "openai/gpt-oss-120b",     // #2 — el más capaz (mejor para cálculos de porciones)
-    "qwen/qwen3.8-27b",        // #3 — rápido, multimodal (respaldo)
-    "allam-2-7b",              // #4 — respaldo final
-];
-
-// Único modelo de esta key que acepta imágenes (verificado con image_url)
-const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
-
-let currentModelIndex = 0;
-const getCurrentModel = () => GROQ_MODELS[currentModelIndex];
-
-function rotateModel() {
-    currentModelIndex = (currentModelIndex + 1) % GROQ_MODELS.length;
-    console.log(`🤖 [Groq] Rotando modelo → ${getCurrentModel()}`);
-}
+const TIPO = {
+    ANALISIS: 'analisis_rapido',
+    MICROS: 'micros',
+    IMAGEN: 'imagen',
+    BUSQUEDA: 'busqueda',
+    RECETA: 'receta',
+    ESTIMAR: 'estimar'
+};
 
 // ==============================================================================
 // 3. CONSTRUCTOR DE SYSTEM PROMPT CON SCHEMA EMBEBIDO
@@ -141,160 +72,48 @@ ${ejemplo}`;
 };
 
 // ==============================================================================
-// 4. MOTOR CENTRAL — misma lógica que Gemini
+// 4. MOTOR CENTRAL — delega en el backend /api/sugerencias
+// El servidor valida el token de Firebase, rota keys/modelos ante 429 / 401 /
+// 5xx / error de red / timeout de 10s, reintenta una vez si el JSON viene
+// vacío o cortado y devuelve el JSON ya parseado.
 // ==============================================================================
-export async function sendGroqRequest(systemPrompt, userQuery, schema, timeoutMs = 8000) {
-    // Groq usa la API compatible con OpenAI
-    // userQuery puede ser string o array (para imágenes con llama-3.2-vision)
-    const userContent = Array.isArray(userQuery)
-        ? userQuery  // para visión — array de { type, text/image_url }
-        : userQuery; // string normal
+
+// Errores del cliente (ia-client.js) → mensajes para la UI. "RATE_LIMIT: ..."
+// se conserva como prefijo porque varias vistas lo chequean así.
+const MSJ_IA = {
+    SATURADO:           'RATE_LIMIT: El asistente está saturado. Intentá en 1 minuto.',
+    SIN_SESION:         'Tu sesión expiró. Entrá de nuevo para continuar.',
+    SESION_INVALIDA:    'Tu sesión expiró. Entrá de nuevo para continuar.',
+    RED:                'Sin conexión — probá de nuevo.',
+    TIMEOUT:            'Tardó demasiado — probá de nuevo.',
+    RESPUESTA_VACIA:    'No pude entender la respuesta. Probá una vez más.',
+    RESPUESTA_INVALIDA: 'No pude entender la respuesta. Probá una vez más.'
+};
+
+const mensajeAmigable = (codigo) => {
+    if (MSJ_IA[codigo]) return MSJ_IA[codigo];
+    if (typeof codigo === 'string' && codigo.startsWith('HTTP_')) {
+        return 'El asistente no respondió. Probá de nuevo.';
+    }
+    return codigo || 'No se pudo consultar a la IA. Intentá de nuevo.';
+};
+
+export async function sendGroqRequest(systemPrompt, userQuery, schema, timeoutMs = 8000, tipo = TIPO.ANALISIS) {
+    // `timeoutMs` ya no se usa para abortar: los timeouts y la rotación los
+    // maneja el servidor. Se mantiene el parámetro para no romper la firma
+    // de los llamadores existentes.
+    void timeoutMs;
+
+    // userQuery puede ser string o array (array = partes con imagen)
+    const userContent = Array.isArray(userQuery) ? userQuery : userQuery;
 
     // Embebemos el schema en el system prompt
     const fullSystemPrompt = buildSystemPrompt(systemPrompt, schema);
 
-    const MAX_ERRORES_REALES   = 3;
-    const MAX_ESPERAS_COOLDOWN = 2;
-    let erroresReales   = 0;
-    let esperasCooldown = 0;
-    // Si TODOS los modelos fallan con 404 o timeout, dejamos de rotar
-    // (sino el while(true) giraría para siempre)
-    let rotacionesSeguidas = 0;
-
-    while (true) {
-
-        if (groqKeyManager.allOnCooldown()) {
-            if (esperasCooldown >= MAX_ESPERAS_COOLDOWN) {
-                throw new Error("RATE_LIMIT: Todas las keys Groq en cooldown. Intentá en 1 minuto.");
-            }
-            const espera = groqKeyManager.msUntilNextKey() + 500;
-            console.warn(`⏳ [Groq] Todas en cooldown. Esperando ${Math.ceil(espera/1000)}s... (${esperasCooldown + 1}/${MAX_ESPERAS_COOLDOWN})`);
-            await new Promise(r => setTimeout(r, espera));
-            esperasCooldown++;
-        }
-
-        const currentKey = groqKeyManager.getCurrentKey();
-        if (!currentKey) throw new Error("TODAS_LAS_KEYS_INVALIDAS");
-
-        try {
-            const controller = new AbortController();
-            const timeoutId  = setTimeout(() => controller.abort(), timeoutMs);
-
-            // const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            //     method: "POST",
-            //     headers: {
-            //         "Content-Type":  "application/json",
-            //         "Authorization": `Bearer ${currentKey}`
-            //     },
-            //     body: JSON.stringify({
-            //         model:           getCurrentModel(),
-            //         temperature:     0.1,
-            //         max_tokens:      1200,
-            //         response_format: { type: "json_object" }, // JSON mode de Groq
-            //         messages: [
-            //             { role: "system", content: fullSystemPrompt },
-            //             { role: "user",   content: userContent }
-            //         ]
-            //     }),
-            //     signal: controller.signal
-            // });
-            // Dentro de sendGroqRequest
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${currentKey}`
-                    },
-                    body: JSON.stringify({
-                        model: getCurrentModel(),
-                        temperature: 0.1,
-                        // Los modelos gpt-oss "razonan" antes de responder: dejamos
-                        // margen para que no trunque la respuesta a mitad del JSON
-                        max_tokens: 4000,
-                        // response_format: { type: "json_object" }, // <-- ELIMINAR o comentar
-                        messages: [
-                            { role: "system", content: fullSystemPrompt },
-                            { role: "user", content: userContent }
-                        ]
-                    }),
-                    signal: controller.signal
-                });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                // El cuerpo de la respuesta trae el motivo real de Groq
-                const errorBody = await response.text().catch(() => '');
-                const detalle = errorBody ? errorBody.substring(0, 300) : (response.statusText || 'sin detalle');
-
-                if (response.status === 404 || response.status === 400) {
-                    // 404 = modelo dado de baja; 400 = rechazo de la petición.
-                    // En ambos, probar con OTRO modelo puede funcionar.
-                    console.warn(`❌ [Groq] HTTP ${response.status} en "${getCurrentModel()}": ${detalle}`);
-                    rotateModel();
-                    if (++rotacionesSeguidas >= GROQ_MODELS.length) {
-                        const err = new Error(`Groq respondió HTTP ${response.status} en todos los modelos. Detalle: ${detalle}`);
-                        err.fatal = true;
-                        throw err;
-                    }
-                    continue;
-                }
-                if (response.status === 429) {
-                    const retryAfter = response.headers.get('Retry-After');
-                    const cooldownMs = retryAfter ? parseInt(retryAfter) * 1000 : 62000;
-                    groqKeyManager.markRateLimited(currentKey, cooldownMs);
-                    continue;
-                }
-                if (response.status === 401 || response.status === 403) {
-                    groqKeyManager.markPermanentFail(currentKey);
-                    if (groqKeyManager.getAvailableCount() === 0) {
-                        throw new Error("TODAS_LAS_KEYS_INVALIDAS");
-                    }
-                    continue;
-                }
-                throw new Error(`HTTP ${response.status}: ${detalle}`);
-            }
-            rotacionesSeguidas = 0; // el modelo responde bien
-
-            const result  = await response.json();
-            const content = result?.choices?.[0]?.message?.content;
-            if (!content) throw new Error("Respuesta vacía de Groq");
-            // Limpieza robusta: elimina markdown y espacios
-            let cleaned = content.replace(/```json\s*|\s*```/g, '').trim();
-            // Si empieza con algo que no sea '{', intenta encontrar el primer '{'
-            const firstBrace = cleaned.indexOf('{');
-            if (firstBrace !== -1) cleaned = cleaned.substring(firstBrace);
-            const lastBrace = cleaned.lastIndexOf('}');
-            if (lastBrace !== -1) cleaned = cleaned.substring(0, lastBrace + 1);
-            const parsed = JSON.parse(cleaned);
-
-            // Groq con json_object ya devuelve JSON limpio, pero limpiamos por si acaso
-            // const parsed = JSON.parse(content.replace(/```json|```/g, "").trim());
-            groqKeyManager.incrementRequest();
-            return parsed;
-
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.warn(`⏱️ [Groq] Timeout. Rotando modelo...`);
-                rotateModel();
-                if (++rotacionesSeguidas >= GROQ_MODELS.length) {
-                    throw new Error(`[Groq] Timeout: los ${GROQ_MODELS.length} modelos no respondieron`);
-                }
-                continue;
-            }
-            if (error.fatal ||
-                error.message.startsWith('TODAS_LAS_KEYS') ||
-                error.message.startsWith('RATE_LIMIT') ||
-                error.message.startsWith('[Groq] Timeout')) {
-                throw error;
-            }
-
-            erroresReales++;
-            console.warn(`⚠️ [Groq] Error real #${erroresReales}:`, error.message);
-            if (erroresReales >= MAX_ERRORES_REALES) {
-                throw new Error(`[Groq] Fallo tras ${erroresReales} errores: ${error.message}`);
-            }
-            await new Promise(r => setTimeout(r, Math.pow(2, erroresReales) * 500));
-        }
+    try {
+        return await pedirIA({ tipo, systemPrompt: fullSystemPrompt, userContent });
+    } catch (e) {
+        throw new Error(mensajeAmigable(e?.message));
     }
 }
 
@@ -426,7 +245,8 @@ export function analizarComida(foodDescription) {
         PROMPTS_SISTEMA.ANALISIS_RAPIDO,
         query,
         GROQ_ESQUEMA_RAPIDO,
-        5000
+        5000,
+        TIPO.ANALISIS
     ).then(async resultado => {
         const { resultado: enriquecido, microsOFF: off } = await enriquecerItemsConOFF(resultado);
         microsOFF = off;
@@ -471,7 +291,8 @@ export function analizarComida(foodDescription) {
                 PROMPTS_SISTEMA.ENRIQUECIMIENTO_MICROS,
                 `Calculá micronutrientes para: ${alimentosParaMicros}`,
                 GROQ_ESQUEMA_MICROS,
-                8000
+                8000,
+                TIPO.MICROS
             ));
 
         // Combinar: micros de la IA (ítems sin marca) + micros reales de OFF
@@ -482,32 +303,22 @@ export function analizarComida(foodDescription) {
     return { rapido, microsPromise };
 }
 
-// Análisis de imagen — requiere modelo con visión
+// Análisis de imagen — el servidor elige el modelo con visión cuando detecta
+// una imagen en el contenido (ver netlify/functions/sugerencias.js)
 export async function analizarImagenDeComida(base64Image, mimeType = "image/jpeg") {
-    const modelAnterior = currentModelIndex;
-    const indiceVision = GROQ_MODELS.indexOf(GROQ_VISION_MODEL);
-    if (indiceVision === -1) {
-        // Defensa: si el modelo de visión no está en la lista, no mandamos
-        // imágenes a un modelo de solo texto (la API devolvería un 400)
-        throw new Error(`Modelo de visión "${GROQ_VISION_MODEL}" no disponible en GROQ_MODELS`);
-    }
-    currentModelIndex = indiceVision;
-    try {
-        return await sendGroqRequest(
-            PROMPTS_SISTEMA.ANALISIS_IMAGEN,
-            [
-                {
-                    type: "image_url",
-                    image_url: { url: `data:${mimeType};base64,${base64Image}` }
-                },
-                { type: "text", text: "Analizá nutricionalmente esta imagen." }
-            ],
-            GROQ_ESQUEMA_RAPIDO,
-            10000
-        );
-    } finally {
-        currentModelIndex = modelAnterior; // restaurar modelo aunque falle
-    }
+    return await sendGroqRequest(
+        PROMPTS_SISTEMA.ANALISIS_IMAGEN,
+        [
+            {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` }
+            },
+            { type: "text", text: "Analizá nutricionalmente esta imagen." }
+        ],
+        GROQ_ESQUEMA_RAPIDO,
+        10000,
+        TIPO.IMAGEN
+    );
 }
 
 // Buscador puntual
@@ -516,13 +327,14 @@ export async function buscarAlimento(query) {
         PROMPTS_SISTEMA.BUSQUEDA_ALIMENTO,
         query,
         GROQ_ESQUEMA_COMIDA_COMPLETO,
-        6000
+        6000,
+        TIPO.BUSQUEDA
     );
 }
 
-// Helper para el botón
+// Helper para el botón — sin keys locales: el servidor reporta la saturación
 export function hayKeysDisponibles() {
-    return groqKeyManager.getAvailableCount() > 0 || groqKeyManager.allOnCooldown();
+    return !groqKeyManager.allOnCooldown();
 }
 
 export const analizarReceta = async (descripcion) => {
@@ -558,7 +370,7 @@ Reglas:
 - Respondé solo con el JSON.`;
 
     // Llamamos a sendGroqRequest sin esquema (null) y con mayor timeout
-    const resultado = await sendGroqRequest(systemPrompt, `Descripción: "${descripcion}"`, null, 10000);
+    const resultado = await sendGroqRequest(systemPrompt, `Descripción: "${descripcion}"`, null, 10000, TIPO.RECETA);
     // resultado ya debería ser un objeto JSON
     if (!resultado.ingredientes) throw new Error("La respuesta no contiene ingredientes");
     return resultado;
@@ -583,7 +395,8 @@ export async function estimarNutrientesPor100g(nombreIngrediente) {
         PROMPTS_SISTEMA.ESTIMAR_INGREDIENTE,
         `Ingrediente: "${nombreIngrediente}"`,
         null,
-        6000
+        6000,
+        TIPO.ESTIMAR
     );
 
     const por100 = resultado?.por_100g;

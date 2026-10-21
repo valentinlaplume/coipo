@@ -4,6 +4,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 import { db } from "../firebase-config.js";
 import { buscarProductoPorNombreSimilar } from './openfoodfacts.service.js';
+import { obtenerToken } from './ai/ia-client.js';
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES Y HELPERS
@@ -29,18 +30,26 @@ const redondear = (valor, decimales = 1) => {
 // ─────────────────────────────────────────────────────────────
 // FETCH CON TIMEOUT
 // ─────────────────────────────────────────────────────────────
-const fetchConTimeout = async (url, timeout = TIMEOUT_MS) => {
+const fetchConTimeout = async (url, timeout = TIMEOUT_MS, headers = undefined) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     try {
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, { signal: controller.signal, headers });
         clearTimeout(timeoutId);
         return response;
     } catch (error) {
         clearTimeout(timeoutId);
         throw error;
     }
+};
+
+// Las llamadas a OFF van por el backend propio (GET /api/openfoodfacts): el
+// navegador no puede llamar a OFF directo (sin CORS + 503 de Cloudflare).
+// Devuelve las cabeceras con el Bearer de la sesión, o null si no hay sesión.
+const cabecerasOFF = async () => {
+    const token = await obtenerToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : null;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -53,8 +62,14 @@ export const buscarEnOpenFoodFacts = async (barcode) => {
     }
 
     try {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
-        const res = await fetchConTimeout(url);
+        const headers = await cabecerasOFF();
+        if (!headers) {
+            console.warn('⚠️ Sin sesión: no se consulta OFF por código');
+            return null;
+        }
+
+        const url = `/api/openfoodfacts?barcode=${encodeURIComponent(barcode)}`;
+        const res = await fetchConTimeout(url, TIMEOUT_MS, headers);
 
         if (!res.ok) {
             console.warn(`⚠️ HTTP ${res.status} para código ${barcode}`);
@@ -113,9 +128,15 @@ export const buscarEnOpenFoodFactsPorNombre = async (nombreIngrediente) => {
     }
 
     try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(nombreIngrediente)}&search_simple=1&action=process&json=1&page_size=1`;
+        const headers = await cabecerasOFF();
+        if (!headers) {
+            console.warn('⚠️ Sin sesión: no se consulta OFF por nombre');
+            return null;
+        }
+
+        const url = `/api/openfoodfacts?q=${encodeURIComponent(nombreIngrediente)}&page_size=1`;
         
-        const res = await fetchConTimeout(url);
+        const res = await fetchConTimeout(url, TIMEOUT_MS, headers);
         
         if (!res.ok) {
             console.warn(`⚠️ HTTP ${res.status} en búsqueda por nombre`);
