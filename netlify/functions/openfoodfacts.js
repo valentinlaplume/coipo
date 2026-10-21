@@ -110,7 +110,13 @@ const verificarToken = async (token) => {
             audience: PROYECTO_FIREBASE
         });
         return payload && payload.sub ? payload : null;
-    } catch {
+    } catch (error) {
+        // Log temporal de diagnóstico: solo código de jose y si la variable
+        // existe. Nunca el token, el payload ni valores de configuración.
+        console.error('❌ [OFF] jwtVerify falló:', {
+            codigo: error?.code || error?.name || 'DESCONOCIDO',
+            proyectoDefinido: Boolean(PROYECTO_FIREBASE)
+        });
         return null;
     }
 };
