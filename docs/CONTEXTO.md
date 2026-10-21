@@ -42,7 +42,7 @@ Comandos:
 |---|---|
 | Correr en local | `npx netlify dev` (flujo oficial: sitio + `/api/*` con `.env`) |
 | Respaldo | `npm run dev` (Vite + plugin `api-local` de `vite.config.mjs`) |
-| Build | `npm run build` → `dist/` (`base: './'`, anda desde subcarpeta) |
+| Build | `npm run build` → `dist/` (`base: './'`, anda desde subcarpeta; `dist/` está en `.gitignore`, no se versiona) |
 | Tests | `npm test` → `node --test tests/` (92 tests, sin red, sin navegador) |
 
 - `npm run dev` **funciona como respaldo**: el plugin `api-local` ejecuta las
@@ -107,8 +107,9 @@ src/services/ai/* copy.js, prompts-sugerencias.js  Archivos MUERTOS (no se
                          importan; el prompt real del asistente es
                          prompts/sugerencias_system.txt).
 src/services/db/meal.service.js       Firestore de ingestas: crearRegistroComida
-                         (fase 1), enriquecerRegistroConMicros (fase 2),
-                         eliminar/restaurar ingesta, actualizarHidratacion.
+                         (fase 1), enriquecerRegistroConMicros (fase 2: solo
+                         escritura en Firestore, sin IA), eliminar/restaurar
+                         ingesta, actualizarHidratacion.
 src/services/db/receta.service.js     CRUD de recetas; procesarReceta convierte
                          ingredientes a gramos (OFF por similitud, fallback IA
                          'estimar'); micro-cache compartida de ingredientes.
@@ -193,12 +194,16 @@ fijas, un solo cuerpo scrolleable `.ingesta-cuerpo`). Pestañas:
    (`pedirGramos`, arranca con `porcion_g` y ofrece el chip "1 porción (X g)";
    si no hay porción, 100 g) → registro local con **regla de tres** (sin IA).
    Los micros que OFF traiga (fibra, sodio, azúcares) se guardan en la misma
-   ingesta; los que falten quedan `null` (no 0).
+   ingesta; los que falten quedan `null` (no 0). **Acá no se llama a la IA**:
+   la porción ya viene calculada y `enriquecerRegistroConMicros` solo escribe
+   en Firestore. Lo mismo vale para el escáner.
 2. **Recetas**: lista de recetas del usuario → elegir → porciones/gramos →
    registrar (`es_porcion_receta: true`, micros con lógica especial).
 3. **IA** (`#texto-comida`, máx. 1000 chars): `analizarComida(descripcion)` →
    `rapido` (fase 1: macros) → `crearRegistroComida` **ya** (optimista) →
-   `microsPromise` (fase 2, background) → `enriquecerRegistroConMicros`.
+   `microsPromise` (fase 2, background, IA tipo `micros`; **solo** en este
+   flujo y en los extras de receta) → `enriquecerRegistroConMicros` (solo
+   escritura en Firestore, sin IA).
    Chips de momento del día preseleccionados por hora local.
 
 **Recetas**: modal `#modal-receta` — crear/editar: descripción libre →
@@ -256,6 +261,12 @@ micros del día, historial de 7 días en el calendario). Ver §10.
   (asistente) y `groq.service.js` (`analizarComida` → rapido + microsPromise,
   `analizarReceta`, `estimarNutrientesPor100g`). `analizarImagenDeComida` y
   `buscarAlimento` existen pero **no los usa ninguna UI** (ver §10).
+- **Micros con IA**: solo el `microsPromise` de `analizarComida()` (tipo
+  `micros`), y únicamente para **comidas descritas por texto** y **extras de
+  receta**. `enriquecerRegistroConMicros` **no llama a la IA**: recibe los
+  micros ya calculados y solo escribe en Firestore (`updateDoc` de la ingesta +
+  `increment()` en `resumen_diario`). Los productos de OFF y "Tus productos"
+  nunca pasan por IA: usan los micros de la fuente o `null`.
 
 ## 7. Búsqueda de alimentos y atribución OFF
 
@@ -362,8 +373,8 @@ Orden de fuentes (IA nunca es la primera):
   suma 0). Los incrementos de `resumen_diario` ignoran los `null`.
 - `porcion_g` de OFF como valor inicial del modal de gramos + chip
   "1 porción (X g)"; si el producto no trae porción, 100 g.
-- 92 tests en verde y `npm run build` OK. Repo git al día (2 commits nuevos:
-  documentación de contexto y ajustes de micros/nav/porciones).
+- 92 tests en verde y `npm run build` OK. `dist/` es artefacto de build: está
+  en `.gitignore` y fuera del índice de Git (la carpeta local se conserva).
 
 **A medias / pendientes conocidos**:
 
@@ -408,6 +419,10 @@ Orden de fuentes (IA nunca es la primera):
   `restaurarIngesta` solo operan sobre números (`typeof valor === 'number'`).
   No "arreglar" con `|| 0` ni `increment(null)`: escribiría un 0 falso y la UI
   lo mostraría como consumo.
+- **`enriquecerRegistroConMicros` no es IA**: solo hace `updateDoc`/`setDoc`.
+  La llamada tipo `micros` vive en `analizarComida()` (`microsPromise`) y se usa
+  solo en comidas descritas por texto y extras de receta. No agregarla a
+  búsqueda/escáner: esos productos usan los micros de OFF o `null`.
 - **`dateKey` en hora local**: `getISO` usa hora local; cuidado con
   `toISOString()` (UTC) alrededor de medianoche.
 - **CSS**: no agregar `:root` ni literales de color/espacio/radio; `tema-oscuro.css`
