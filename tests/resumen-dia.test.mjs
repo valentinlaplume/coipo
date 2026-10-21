@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     CAMPOS_RESUMEN,
+    VENTANA_PENDIENTE_MS,
     calcularResumenDia,
     diferenciasResumen,
     hayEscriturasPendientes,
@@ -86,28 +87,60 @@ test('redondea a dos decimales al sumar', () => {
     assert.equal(resumen.acumulado_fibra, 0.3);
 });
 
-test('no recalcula mientras haya escrituras pendientes (micros_completos ≠ true)', () => {
-    const pendiente = [{
-        resumen_macros: { total_calorias: 500 },
-        micros_completos: false,
-    }];
+test('solo cuenta como pendiente una ingesta reciente con micros_completos === false', () => {
+    const ahora = new Date('2026-10-21T12:00:00Z').getTime();
     const resumenDescuadrado = { acumulado_calorias: 999 };
+    const base = { resumen_macros: { total_calorias: 500 } };
 
-    assert.equal(hayEscriturasPendientes(pendiente), true);
-    // Aunque el total no coincida, se saltea: la fase 2 todavía puede cambiarlo.
-    assert.equal(necesitaRecalculoDia(pendiente, resumenDescuadrado), false);
+    // Recién creada y sin confirmar → pendiente: no se recalcula.
+    const reciente = [{
+        ...base,
+        micros_completos: false,
+        creado_el: new Date(ahora - 30_000),
+    }];
+    assert.equal(hayEscriturasPendientes(reciente, ahora), true);
+    assert.equal(necesitaRecalculoDia(reciente, resumenDescuadrado, 1, ahora), false);
 
-    // Sin el flag también cuenta como pendiente (datos a medio escribir).
-    const sinFlag = [{ resumen_macros: { total_calorias: 500 } }];
-    assert.equal(hayEscriturasPendientes(sinFlag), true);
-    assert.equal(necesitaRecalculoDia(sinFlag, resumenDescuadrado), false);
+    // Mismo caso con Timestamp de Firestore ({seconds}).
+    const recienteTimestamp = [{
+        ...base,
+        micros_completos: false,
+        creado_el: { seconds: Math.floor((ahora - 30_000) / 1000) },
+    }];
+    assert.equal(hayEscriturasPendientes(recienteTimestamp, ahora), true);
 
-    // Con todas confirmadas, el descuadre sí dispara el recálculo.
-    const confirmadas = [{ resumen_macros: { total_calorias: 500 }, micros_completos: true }];
+    // Más de 2 minutos: la fase 2 quedó colgada → no bloquea la reparación.
+    const vieja = [{
+        ...base,
+        micros_completos: false,
+        creado_el: new Date(ahora - 3 * 60_000),
+    }];
+    assert.equal(hayEscriturasPendientes(vieja, ahora), false);
+    assert.equal(necesitaRecalculoDia(vieja, resumenDescuadrado, 1, ahora), true);
+
+    // Justo en el borde de 2 minutos ya no es pendiente ("menos de 2").
+    const borde = [{
+        ...base,
+        micros_completos: false,
+        creado_el: new Date(ahora - VENTANA_PENDIENTE_MS),
+    }];
+    assert.equal(hayEscriturasPendientes(borde, ahora), false);
+
+    // Sin el campo `micros_completos` no es pendiente (dato viejo).
+    const sinCampo = [{ ...base, creado_el: new Date(ahora - 30_000) }];
+    assert.equal(hayEscriturasPendientes(sinCampo, ahora), false);
+    assert.equal(necesitaRecalculoDia(sinCampo, resumenDescuadrado, 1, ahora), true);
+
+    // Con false pero sin creado_el tampoco se puede afirmar que esté en vuelo.
+    const sinCreado = [{ ...base, micros_completos: false }];
+    assert.equal(hayEscriturasPendientes(sinCreado, ahora), false);
+
+    // Confirmada: nunca bloquea.
+    const confirmadas = [{ ...base, micros_completos: true, creado_el: new Date(ahora - 30_000) }];
+    assert.equal(hayEscriturasPendientes(confirmadas, ahora), false);
     const resumenCorrecto = calcularResumenDia(confirmadas);
-    assert.equal(hayEscriturasPendientes(confirmadas), false);
-    assert.equal(necesitaRecalculoDia(confirmadas, resumenDescuadrado), true);
-    assert.equal(necesitaRecalculoDia(confirmadas, resumenCorrecto), false);
+    assert.equal(necesitaRecalculoDia(confirmadas, resumenDescuadrado, 1, ahora), true);
+    assert.equal(necesitaRecalculoDia(confirmadas, resumenCorrecto, 1, ahora), false);
 });
 
 test('conserva vasos_agua al preparar el documento a guardar', () => {

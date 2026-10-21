@@ -117,27 +117,57 @@ export const diferenciasResumen = (guardado = {}, calculado = {}, tolerancia = 1
 };
 
 /**
- * ¿Hay escrituras de comidas todavía sin confirmar? La fase 2 de micros deja
- * `micros_completos: false` hasta que termina (o el campo falta en datos
- * viejos). Mientras eso pase, el resumen puede estar a mitad de camino: no se
- * toca automáticamente.
- * @param {Array<Object>} ingestas
- * @returns {boolean}
+ * Ventana durante la que una ingesta con `micros_completos: false` se
+ * considera "en vuelo" (fase 2 de micros sin confirmar).
  */
-export const hayEscriturasPendientes = (ingestas = []) =>
-    (Array.isArray(ingestas) ? ingestas : []).some(i => i?.micros_completos !== true);
+export const VENTANA_PENDIENTE_MS = 2 * 60 * 1000;
+
+const milisegundosDe = (valor) => {
+    if (valor == null) return null;
+    if (typeof valor === 'number' && Number.isFinite(valor)) return valor;
+    if (valor instanceof Date) return valor.getTime();
+    if (typeof valor.toMillis === 'function') return valor.toMillis();
+    if (typeof valor.toDate === 'function') return valor.toDate().getTime();
+    if (typeof valor.seconds === 'number') {
+        return valor.seconds * 1000 + (Number(valor.nanoseconds) || 0) / 1e6;
+    }
+    return null;
+};
 
 /**
- * Criterio del chequeo automático al abrir un día: solo recalcular si todas
- * las ingestas están confirmadas y el total guardado difiere de la suma real.
- * Si hay algo pendiente se saltea y se reintenta en la próxima apertura.
+ * ¿Hay escrituras de comidas todavía sin confirmar? Solo cuenta una ingesta
+ * con `micros_completos === false` **y** creada hace menos de 2 minutos. Si es
+ * más vieja, o si el campo/`creado_el` no existe, no bloquea el recálculo: se
+ * asume que la fase 2 quedó incompleta y el resumen se puede reparar.
+ * @param {Array<Object>} ingestas
+ * @param {number} ahora milisegundos (inyectable en tests)
+ * @returns {boolean}
+ */
+export const hayEscriturasPendientes = (ingestas = [], ahora = Date.now()) =>
+    (Array.isArray(ingestas) ? ingestas : []).some(i => {
+        if (i?.micros_completos !== false) return false;
+        const creado = milisegundosDe(i?.creado_el);
+        if (creado === null) return false;
+        return ahora - creado < VENTANA_PENDIENTE_MS;
+    });
+
+/**
+ * Criterio del chequeo automático al abrir un día: solo recalcular si no hay
+ * escrituras recientes pendientes y el total guardado difiere de la suma real.
+ * Si hay algo en vuelo se saltea y se reintenta en la próxima apertura.
  * @param {Array<Object>} ingestas
  * @param {Object} resumenGuardado
  * @param {number} tolerancia
+ * @param {number} ahora milisegundos (inyectable en tests)
  * @returns {boolean}
  */
-export const necesitaRecalculoDia = (ingestas = [], resumenGuardado = {}, tolerancia = 1) => {
-    if (hayEscriturasPendientes(ingestas)) return false;
+export const necesitaRecalculoDia = (
+    ingestas = [],
+    resumenGuardado = {},
+    tolerancia = 1,
+    ahora = Date.now(),
+) => {
+    if (hayEscriturasPendientes(ingestas, ahora)) return false;
     const calculado = calcularResumenDia(ingestas);
     return diferenciasResumen(resumenGuardado, calculado, tolerancia).length > 0;
 };

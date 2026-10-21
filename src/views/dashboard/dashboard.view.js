@@ -498,9 +498,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
     // ── AUTO-REPARACIÓN DEL RESUMEN ──
     // Usa las comidas YA cargadas en caché (cero lecturas extra). Solo escribe
-    // en Firestore cuando hace falta reparar. Si hay escrituras pendientes
-    // (comidas con `micros_completos` distinto de true), se saltea: el resumen
-    // todavía puede estar a mitad de camino. Se reintenta al reabrir el día.
+    // en Firestore cuando hace falta reparar. Si hay escrituras recientes
+    // pendientes (micros_completos === false y creada hace <2 min), se saltea:
+    // el resumen todavía puede estar a mitad de camino. Se reintenta al
+    // reabrir el día.
     const repararResumenSiHaceFalta = () => {
         if (!necesitaRecalculoDia(ingestas, resumen)) return;
         if (recalculosEnCurso.has(dateKey)) return;
