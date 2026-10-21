@@ -3,6 +3,8 @@
 App mobile-first (Vite + JS vanilla + Netlify Functions) de registro de
 comidas, macros y recetas, con tema claro/oscuro y backend propio en Firestore.
 
+- Contexto completo (modelo de datos, flujos, IA, decisiones y trampas):
+  `docs/CONTEXTO.md`. Leerlo antes de cambios grandes.
 - Tests: `npm test` (Node test runner, sin navegador).
 - Build: `npm run build` (debe pasar siempre, ~0.5 s).
 - CSS enlazado en `index.html`; las vistas viven en `src/views/*`.

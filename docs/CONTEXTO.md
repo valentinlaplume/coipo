@@ -40,9 +40,15 @@ Comandos:
 
 | Acción | Comando |
 |---|---|
-| Correr en local | `npx netlify dev` (sirve sitio + `/api/*` con `.env`) — **no** usar `npm run dev` como flujo principal |
+| Correr en local | `npx netlify dev` (flujo oficial: sitio + `/api/*` con `.env`) |
+| Respaldo | `npm run dev` (Vite + plugin `api-local` de `vite.config.mjs`) |
 | Build | `npm run build` → `dist/` (`base: './'`, anda desde subcarpeta) |
-| Tests | `npm test` → `node --test tests/` (~89 tests, sin red, sin navegador) |
+| Tests | `npm test` → `node --test tests/` (92 tests, sin red, sin navegador) |
+
+- `npm run dev` **funciona como respaldo**: el plugin `api-local` ejecuta las
+  mismas funciones de `netlify/functions` en el dev server. Lo que NO reproduce
+  son los **redirects** de `netlify.toml` ni el **límite de 10 s** por
+  invocación de Netlify; para fidelidad con producción, usar `npx netlify dev`.
 
 - `netlify.toml`: build → `dist`, functions → `netlify/functions`, redirect
   `/api/*` → `/.netlify/functions/:splat`, `included_files: ["prompts/**"]`.
@@ -175,7 +181,7 @@ Receta / Usar Receta), lista "Ingestas de Hoy" (kcal, pills de macros, chips de
 micros o "Calculando micros…", acordeón de detalle por ingrediente, ✕ eliminar
 con deshacer), botón "¿Qué comiste ahora?", Hidratación (vasos),
 Micronutrientes (details). Bottom-nav: Hoy · Sugerencias · **+ Registrar** ·
-Diario *(sin cablear)* · Perfil.
+Perfil (el ítem "Diario" se quitó; el historial sigue pendiente, ver §10).
 
 **Nueva Ingesta** (hoja `#modal-registro`, ~92 dvh; cabecera/chips/pestañas
 fijas, un solo cuerpo scrolleable `.ingesta-cuerpo`). Pestañas:
@@ -184,7 +190,10 @@ fijas, un solo cuerpo scrolleable `.ingesta-cuerpo`). Pestañas:
    (a) Tus productos, (b) Open Food Facts vía `/api/buscar-alimentos`. Chips
    de consulta sugerida. Resultados agrupados "Tus productos / Open Food Facts"
    con "Ver más", crédito `.off-fuente` al pie. Al elegir: modal de gramos
-   (`pedirGramos`) → registro local con **regla de tres** (sin IA).
+   (`pedirGramos`, arranca con `porcion_g` y ofrece el chip "1 porción (X g)";
+   si no hay porción, 100 g) → registro local con **regla de tres** (sin IA).
+   Los micros que OFF traiga (fibra, sodio, azúcares) se guardan en la misma
+   ingesta; los que falten quedan `null` (no 0).
 2. **Recetas**: lista de recetas del usuario → elegir → porciones/gramos →
    registrar (`es_porcion_receta: true`, micros con lógica especial).
 3. **IA** (`#texto-comida`, máx. 1000 chars): `analizarComida(descripcion)` →
@@ -291,11 +300,14 @@ Orden de fuentes (IA nunca es la primera):
 - **UX de móvil primero**: targets ≥ 44 px, texto ≥ 14 px, sin scroll
   horizontal, modales cerrables por arrastre Y por botón, toasts en lugar de
   `alert()`.
-- **Fuera de alcance por ahora**: pantalla de estadísticas; vista "Diario"
-  (botón existe pero no hace nada); análisis de comida por **foto** (el tipo
-  `imagen` está en la API pero no hay UI); micros para productos OFF (se
-  registran en 0: solo macros/fibra=0); multi-idioma; wearables/pasos reales;
-  emuladores de Firebase.
+- **Fuera de alcance por ahora**: pantalla de estadísticas e historial
+  ("Diario" se quitó del nav; falta definir la vista); análisis de comida por
+  **foto** (el tipo `imagen` está en la API pero no hay UI); completar con IA
+  los micros que OFF no trae (se decidió no hacerlo: se guarda `null`);
+  multi-idioma; wearables/pasos reales; emuladores de Firebase.
+- **Dato desconocido = `null`, nunca 0**: los productos de OFF/Tus productos
+  pueden no traer fibra, sodio o azúcares. Se persiste `null` y los totales/UI
+  distinguen "sin dato" (`—`) de "consumo 0".
 
 ## 9. Convenciones
 
@@ -303,9 +315,10 @@ Orden de fuentes (IA nunca es la primera):
   local del dashboard y se re-renderiza sin esperar la red. Los totales del día
   (`resumen_diario`) se mantienen con `increment()` en Firestore (sumar al
   registrar, **restar** al borrar, sumar al restaurar). No recalcular leyendo
-  todas las comidas. *Nota: hoy NO hay `onSnapshot`; la semana se carga con
-  `getDoc`/`getDocs` + caché en memoria (`cargarSemanaEnCache`,
-  `limpiarCacheDashboard`, `invalidarCacheDia`).*
+  todas las comidas. *Decisión: NO se implementa `onSnapshot`; la semana se
+  carga con `getDoc`/`getDocs` + caché optimista en memoria
+  (`cargarSemanaEnCache`, `limpiarCacheDashboard`, `invalidarCacheDia`).
+  `onSnapshot` solo se evaluaría para sincronizar cambios entre dispositivos.*
 - **Caché de datos**: la semana se cachea por usuario; cambiar de cuenta
   siempre llama a `limpiarCacheDashboard()` y `limpiarCacheAlimentos()`.
 - **Gestos**: todo cierre por gesto tiene alternativa con botón; movimiento solo
@@ -342,14 +355,20 @@ Orden de fuentes (IA nunca es la primera):
 - Asistente de sugerencias guiado (intents, preguntas, restantes del día,
   feedback con votos, caché y enfriamiento).
 - Base de estilos (tokens + componentes + skill ui-coach + tests guardián) y
-  sistema de gestos iOS.
-- 89 tests en verde y `npm run build` OK. Repo git al día (último commit:
-  "Base de estilos: tokens, componentes y skill ui-coach").
+  sistema de gestos iOS. `--coipo-primary-light` y `--coipo-primary-rgb` ya
+  están definidos (claro y oscuro) y el test guardián no tiene allowlist.
+- Micros de OFF/Tus productos **sin IA**: se guardan fibra, sodio y azúcares
+  cuando la fuente los trae; si faltan quedan `null` (la UI muestra `—` y no
+  suma 0). Los incrementos de `resumen_diario` ignoran los `null`.
+- `porcion_g` de OFF como valor inicial del modal de gramos + chip
+  "1 porción (X g)"; si el producto no trae porción, 100 g.
+- 92 tests en verde y `npm run build` OK. Repo git al día (2 commits nuevos:
+  documentación de contexto y ajustes de micros/nav/porciones).
 
 **A medias / pendientes conocidos**:
 
-- Bottom-nav **"Diario" sin funcionalidad**: el botón aparece en 3 vistas y
-  ningún handler lo escucha. Definir si se cablea a un historial o se elimina.
+- **Historial / "Diario"**: el ítem se quitó del bottom-nav en las 3 vistas
+  (Hoy, Sugerencias, Perfil); falta decidir y construir la vista de historial.
 - **No hay pantalla de estadísticas** ni historial más allá de los 7 días del
   calendario.
 - Tipos IA `imagen` y `busqueda` implementados en `groq.service.js` pero sin
@@ -358,13 +377,9 @@ Orden de fuentes (IA nunca es la primera):
   `src/services/ai/_schemas copy.js`, `src/services/ai/prompts-sugerencias.js`,
   paquete npm `firebase` sin usar, directorio raíz `functions/` (legacy
   Firebase).
-- Tokens heredados sin definir a propósito: `--coipo-primary-light` y
-  `--coipo-primary-rgb` (allowlist en `tests/estilos-base.test.mjs`; definirlos
-  cambiaría el aspecto de `.meal-item.pending-new`).
-- Micros en "Tus productos"/OFF: se guardan en 0 (solo macros). Oportunidad de
-  pedir `serving_quantity` al elegir un producto de SAL.
-- `serving/porción` de OFF: hay `porcion_g` disponible pero el flujo actual
-  pide gramos planos.
+- **Micros incompletos en productos**: OFF rara vez trae los 10 micros; los
+  que faltan quedan `null` a propósito (decisión: no estimarlos con IA). Si se
+  quiere el set completo, habría que estimarlo y marcar el origen del dato.
 
 ## 11. Problemas conocidos y trampas
 
@@ -388,6 +403,11 @@ Orden de fuentes (IA nunca es la primera):
 - **Los totales del día se descuadran fácil**: cualquier escritura de comidas
   DEBE pasar por `meal.service.js` (usa `increment()`); borrar = restar
   (`eliminarIngesta`), restaurar = sumar (`restaurarIngesta`).
+- **`null` ≠ 0**: los micros que una fuente no trae se guardan `null` y
+  `crearRegistroComida`/`enriquecerRegistroConMicros`/`eliminarIngesta`/
+  `restaurarIngesta` solo operan sobre números (`typeof valor === 'number'`).
+  No "arreglar" con `|| 0` ni `increment(null)`: escribiría un 0 falso y la UI
+  lo mostraría como consumo.
 - **`dateKey` en hora local**: `getISO` usa hora local; cuidado con
   `toISOString()` (UTC) alrededor de medianoche.
 - **CSS**: no agregar `:root` ni literales de color/espacio/radio; `tema-oscuro.css`
