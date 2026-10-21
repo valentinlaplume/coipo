@@ -8,6 +8,8 @@ import { authService } from '../../services/auth.service.js';
 import { calcularPlanNutricional } from '../../utils/nutrition-logic.js';
 import { renderDashboard, mostrarToast, ponerCargando, quitarCargando } from '../dashboard/dashboard.view.js';
 import { renderSugerencias } from '../sugerencias/sugerencias.view.js';
+import { renderDiario } from '../diario/diario.view.js';
+import { bottomNavHTML, conectarBottomNav } from '../../components/bottom-nav.js';
 import { temaActual, elegirTema, TEMA_OSCURO, TEMA_CLARO } from '../../utils/tema.js';
 import { alRenderizar } from '../../utils/gestos.js';
 
@@ -307,21 +309,7 @@ export const renderPerfil = (container, userData) => {
                 <button id="guardar-cambios" class="btn-primary">Guardar</button>
             </div>
 
-            <nav class="bottom-nav">
-                <button class="nav-item" id="nav-hoy-perfil">
-                    <span class="nav-icon">🏠</span><span class="nav-texto">Hoy</span>
-                </button>
-                <button class="nav-item" id="nav-sugerencias-perfil">
-                    <span class="nav-icon">💡</span><span class="nav-texto">Sugerencias</span>
-                </button>
-                <button class="nav-item nav-add" id="nav-registrar-perfil">
-                    <span class="nav-add-circle">+</span>
-                    <span class="nav-add-label">Registrar</span>
-                </button>
-                <button class="nav-item active" id="nav-perfil-activo">
-                    <span class="nav-icon">⚙️</span><span class="nav-texto">Perfil</span>
-                </button>
-            </nav>
+            ${bottomNavHTML('perfil')}
         </div>
     `;
 
@@ -477,7 +465,7 @@ export const renderPerfil = (container, userData) => {
         }
     };
 
-    // ── Navegación de la nav ──
+    // ── Navegación de la nav (compartida) ──
     const protegerNavegacion = (irA) => {
         if (sucio) {
             mostrarToast('Guardá o descartá los cambios primero', 'warning');
@@ -486,20 +474,16 @@ export const renderPerfil = (container, userData) => {
         irA();
     };
 
-    container.querySelector('#nav-hoy-perfil').onclick = () => {
-        protegerNavegacion(() => renderDashboard(container, userData));
-    };
-
-    container.querySelector('#nav-sugerencias-perfil').onclick = () => {
-        protegerNavegacion(() => renderSugerencias(container, userData));
-    };
-
-    container.querySelector('#nav-registrar-perfil').onclick = () => {
-        protegerNavegacion(async () => {
+    conectarBottomNav(container, {
+        hoy: () => protegerNavegacion(() => renderDashboard(container, userData)),
+        diario: () => protegerNavegacion(() => renderDiario(container, userData)),
+        registrar: () => protegerNavegacion(async () => {
             await renderDashboard(container, userData);
-            // El ➕ del dashboard abre el modal de Nueva Ingesta
-            const btnRegistrar = document.getElementById('nav-registrar');
+            // El ➕ de la nav del dashboard abre el modal de Nueva Ingesta
+            const btnRegistrar = document.querySelector('[data-nav="registrar"]');
             if (btnRegistrar) btnRegistrar.click();
-        });
-    };
+        }),
+        sugerencias: () => protegerNavegacion(() => renderSugerencias(container, userData)),
+        perfil: () => {},
+    });
 };

@@ -24,6 +24,8 @@ import {
 import { consultarSugerencias } from '../../services/ai/sugerencias.service.js';
 import { renderDashboard, mostrarToast, ponerCargando, quitarCargando, invalidarCacheDia } from '../dashboard/dashboard.view.js';
 import { renderPerfil } from '../perfil/perfil.view.js';
+import { renderDiario } from '../diario/diario.view.js';
+import { bottomNavHTML, conectarBottomNav } from '../../components/bottom-nav.js';
 import { alRenderizar } from '../../utils/gestos.js';
 
 // ── utilidades locales ──────────────────────────────────────────────────
@@ -133,21 +135,7 @@ export const renderSugerencias = async (container, userData) => {
 
             <p class="sug-disclaimer">Las sugerencias son orientativas y no reemplazan el consejo de un profesional.</p>
 
-            <nav class="bottom-nav">
-                <button class="nav-item" id="nav-hoy-sug">
-                    <span class="nav-icon">🏠</span><span class="nav-texto">Hoy</span>
-                </button>
-                <button class="nav-item active">
-                    <span class="nav-icon">💡</span><span class="nav-texto">Sugerencias</span>
-                </button>
-                <button class="nav-item nav-add" id="nav-registrar-sug">
-                    <span class="nav-add-circle">+</span>
-                    <span class="nav-add-label">Registrar</span>
-                </button>
-                <button class="nav-item" id="nav-perfil-sug">
-                    <span class="nav-icon">⚙️</span><span class="nav-texto">Perfil</span>
-                </button>
-            </nav>
+            ${bottomNavHTML('sugerencias')}
         </div>
     `;
 
@@ -546,13 +534,17 @@ export const renderSugerencias = async (container, userData) => {
         desplazar(chat.firstElementChild || chat);
     };
 
-    // ── navegación ──────────────────────────────────────────────────────
-    container.querySelector('#nav-hoy-sug').onclick = () => renderDashboard(container, userData);
-    container.querySelector('#nav-registrar-sug').onclick = async () => {
-        await renderDashboard(container, userData);
-        document.getElementById('nav-registrar')?.click();
-    };
-    container.querySelector('#nav-perfil-sug').onclick = () => renderPerfil(container, userData);
+    // ── navegación (componente compartido) ──────────────────────────────
+    conectarBottomNav(container, {
+        hoy: () => renderDashboard(container, userData),
+        diario: () => renderDiario(container, userData),
+        registrar: async () => {
+            await renderDashboard(container, userData);
+            document.querySelector('[data-nav="registrar"]')?.click();
+        },
+        sugerencias: () => {},
+        perfil: () => renderPerfil(container, userData),
+    });
 
     // ── momento editable ────────────────────────────────────────────────
     container.querySelectorAll('#sug-momento-chips .pill').forEach(chip => {

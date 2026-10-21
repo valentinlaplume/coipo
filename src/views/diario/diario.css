@@ -1,0 +1,378 @@
+/* src/views/diario/diario.css
+   Pantalla Diario (historial semanal), sólo lectura. Mobile-first 360–390 px.
+   Los componentes compartidos (nav, botones, filas) viven en components.css;
+   acá sólo están las piezas propias del historial. */
+
+.vista-diario {
+    padding-bottom: calc(var(--touch-min) + var(--sp-24) + var(--sp-24));
+}
+
+.diario-semana {
+    display: grid;
+    grid-template-columns: var(--touch-min) minmax(0, 1fr) var(--touch-min);
+    align-items: center;
+    gap: var(--sp-8);
+    margin-bottom: var(--sp-16);
+    padding: var(--sp-4);
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+}
+
+.diario-flecha {
+    width: var(--touch-min);
+    height: var(--touch-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--coipo-surface);
+    border: none;
+    border-radius: var(--radius-pill);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-heading);
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.diario-flecha:active {
+    transform: scale(0.94);
+}
+
+.diario-flecha:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.diario-semana-centro {
+    min-width: 0;
+    text-align: center;
+}
+
+.diario-rango {
+    display: block;
+    color: var(--coipo-text);
+    font-size: var(--fs-base);
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diario-semana-sub {
+    display: block;
+    margin-top: var(--sp-2);
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-caption);
+    line-height: 1.2;
+}
+
+.diario-card {
+    padding: var(--sp-16);
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.diario-card + .diario-card {
+    margin-top: var(--sp-12);
+}
+
+.diario-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-8);
+    margin-bottom: var(--sp-12);
+}
+
+.diario-card-head h2,
+.diario-dias h2 {
+    margin: 0;
+    color: var(--coipo-text);
+    font-size: var(--fs-lg);
+    font-weight: 800;
+}
+
+.diario-meta-texto {
+    flex: 0 0 auto;
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-min);
+    font-weight: 600;
+}
+
+/* ── Gráfico de barras (CSS puro) ───────────────────────────────────────── */
+.diario-grafico {
+    position: relative;
+    padding-top: var(--sp-16);
+}
+
+.diario-barras {
+    position: relative;
+    height: calc(var(--touch-fila) * 2 + var(--sp-20));
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--sp-6);
+}
+
+.diario-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-6);
+}
+
+.diario-barra-slot {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.diario-barra {
+    width: min(100%, var(--sp-20));
+    min-height: var(--sp-2);
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+    background: var(--coipo-primary-light);
+}
+
+.diario-barra.en-rango {
+    background: var(--coipo-primary);
+}
+
+.diario-sin-registro {
+    width: var(--sp-6);
+    height: var(--sp-6);
+    margin-bottom: var(--sp-2);
+    border-radius: var(--radius-pill);
+    background: var(--coipo-text-muted);
+    opacity: 0.55;
+}
+
+.diario-dia {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-min);
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.diario-meta-linea {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    height: 0;
+    border-top: 1px dashed var(--coipo-text-muted);
+    pointer-events: none;
+}
+
+.diario-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8) var(--sp-12);
+    margin-top: var(--sp-12);
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-min);
+    line-height: 1.2;
+}
+
+.diario-leyenda span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-6);
+}
+
+.diario-swatch {
+    width: var(--sp-10);
+    height: var(--sp-10);
+    border-radius: var(--radius-xs);
+    background: var(--coipo-primary-light);
+}
+
+.diario-swatch.en-rango {
+    background: var(--coipo-primary);
+}
+
+.diario-swatch.meta {
+    height: 0;
+    border-top: 2px dashed var(--coipo-text-muted);
+    border-radius: 0;
+    background: none;
+}
+
+/* ── Resumen de la semana ───────────────────────────────────────────────── */
+.diario-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-8);
+}
+
+.diario-resumen-item {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    padding-right: var(--sp-8);
+    border-right: 1px solid var(--coipo-border);
+}
+
+.diario-resumen-item:last-child {
+    padding-right: 0;
+    border-right: none;
+}
+
+.diario-resumen-label {
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-min);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.diario-resumen-valor {
+    color: var(--coipo-text);
+    font-size: var(--fs-title);
+    font-weight: 800;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.diario-resumen-valor small {
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-caption);
+    font-weight: 600;
+}
+
+.diario-vacio {
+    margin-top: var(--sp-12);
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-min);
+    line-height: 1.4;
+}
+
+/* ── Lista de días (más reciente → más antiguo) ─────────────────────────── */
+.diario-dias {
+    margin-top: var(--sp-16);
+}
+
+.diario-dias h2 {
+    margin-bottom: var(--sp-8);
+}
+
+.diario-lista {
+    overflow: hidden;
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.diario-fila {
+    width: 100%;
+    min-height: var(--touch-fila);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto var(--touch-min);
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-8) var(--sp-12);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--coipo-border);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.diario-fila:last-child {
+    border-bottom: none;
+}
+
+.diario-fila:active {
+    background: var(--coipo-surface);
+}
+
+.diario-fila-fecha {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.diario-fila-kcal {
+    color: var(--coipo-text);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.diario-fila-kcal.vacia {
+    color: var(--coipo-text-muted);
+    font-weight: 600;
+}
+
+.diario-fila-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-title);
+    line-height: 1;
+}
+
+.diario-error {
+    padding: var(--sp-16);
+    background: var(--coipo-tint-error);
+    border: 1px solid var(--coipo-error);
+    border-radius: var(--radius-md);
+    color: var(--coipo-text);
+    font-size: var(--fs-min);
+    line-height: 1.4;
+}
+
+/* ── Esqueleto de carga ─────────────────────────────────────────────────── */
+.diario-skeleton-grafico {
+    height: calc(var(--touch-fila) * 2 + var(--sp-20));
+    display: flex;
+    align-items: flex-end;
+    gap: var(--sp-6);
+}
+
+.diario-skeleton-grafico span {
+    flex: 1;
+    height: 55%;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+    background: var(--skeleton-a);
+}
+
+.diario-skeleton-grafico span:nth-child(2n) { height: 80%; }
+.diario-skeleton-grafico span:nth-child(3n) { height: 35%; }
+
+.diario-skeleton-resumen {
+    margin-top: var(--sp-12);
+}
+
+.diario-skeleton-lista {
+    margin-top: var(--sp-12);
+    padding: var(--sp-4) var(--sp-12);
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-lg);
+}
+
+.diario-skeleton-lista .skeleton-fila:last-child {
+    border-bottom: none;
+}

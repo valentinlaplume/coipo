@@ -66,6 +66,8 @@ export const crearRegistroComida = async (userId, datosMacros, fechaISO, foodDes
             acumulado_proteinas:     increment(totales.total_proteinas),
             acumulado_carbohidratos: increment(totales.total_carbohidratos),
             acumulado_grasas:        increment(totales.total_grasas),
+            // Marca de "hay comidas" para el historial (0 kcal también cuenta).
+            comidas_count:           increment(1),
             ultima_actualizacion:    serverTimestamp()
         };
         // Sin dato de fibra no se toca el acumulado (nunca sumar 0).
@@ -186,7 +188,8 @@ export const eliminarIngesta = async (userId, dateKey, ingesta) => {
                 acumulado_vitamina_d_ui: 0,
                 acumulado_vitamina_b12_mcg: 0,
                 acumulado_omega3_ala_mg: 0,
-                acumulado_omega3_epa_dha_mg: 0
+                acumulado_omega3_epa_dha_mg: 0,
+                comidas_count: snapshot.size
             });
             console.log("Última comida eliminada. Resumen reseteado a 0.");
         } else {
@@ -197,7 +200,10 @@ export const eliminarIngesta = async (userId, dateKey, ingesta) => {
                 acumulado_calorias: increment(-(macros.total_calorias || 0)),
                 acumulado_proteinas: increment(-(macros.total_proteinas || 0)),
                 acumulado_carbohidratos: increment(-(macros.total_carbohidratos || 0)),
-                acumulado_grasas: increment(-(macros.total_grasas || 0))
+                acumulado_grasas: increment(-(macros.total_grasas || 0)),
+                // Valor exacto (no increment): repara también días viejos que
+                // todavía no tenían `comidas_count`.
+                comidas_count: snapshot.size
             };
             if (typeof macros.total_fibra === 'number') {
                 updates.acumulado_fibra = increment(-macros.total_fibra);
@@ -250,7 +256,8 @@ export const restaurarIngesta = async (userId, dateKey, ingesta) => {
             acumulado_calorias: increment(macros.total_calorias || 0),
             acumulado_proteinas: increment(macros.total_proteinas || 0),
             acumulado_carbohidratos: increment(macros.total_carbohidratos || 0),
-            acumulado_grasas: increment(macros.total_grasas || 0)
+            acumulado_grasas: increment(macros.total_grasas || 0),
+            comidas_count: increment(1)
         };
         if (typeof macros.total_fibra === 'number') {
             updates.acumulado_fibra = increment(macros.total_fibra);

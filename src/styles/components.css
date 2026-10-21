@@ -12,6 +12,7 @@
    5. Filas      .receta-fila · .ingesta-receta-fila · .off-fila (resultados)
    6. Buscador   .search-row / .search-field / .search-input / .search-clear
                  / .search-btn (input con botón a la derecha)
+   7. Nav        .bottom-nav / .nav-item / .nav-add (compartida por las vistas)
 
    ⚠️ ORDEN DENTRO DEL ARCHIVO = cascada histórica. Ejemplo: .btn-block va
    ANTES de .btn-primary porque, en la app real, el look de login (.btn-primary
@@ -539,3 +540,139 @@
     cursor: pointer;
 }
 .search-btn:active { filter: brightness(0.92); }
+
+/* ── 7. NAVEGACIÓN INFERIOR ────────────────────────────────────────────────
+   Un solo componente para todas las vistas (src/components/bottom-nav.js).
+   Cinco columnas: Hoy · Diario · [+] Registrar · Ideas · Perfil. El botón
+   central se eleva un poco y usa el color primario; los destinos tienen
+   targets de 75 px de alto y etiquetas de 14 px (piso de legibilidad). */
+
+.bottom-nav {
+    position: fixed;
+    bottom: var(--sp-24);
+    left: var(--sp-12);
+    right: var(--sp-12);
+    height: calc(var(--touch-min) + var(--sp-24) + var(--sp-6));
+    padding: 0 var(--sp-4);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-lg);
+    background: var(--coipo-card);
+    background: color-mix(in srgb, var(--coipo-card) 82%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+.nav-item {
+    position: relative;
+    min-width: 0;
+    min-height: var(--touch-min);
+    height: 100%;
+    padding: 0 var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    background: none;
+    border: none;
+    color: var(--coipo-text-muted);
+    font-family: var(--font-main);
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.nav-item > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Fondo pill del destino activo: visible en claro y en oscuro */
+.nav-item.active:not(.nav-add)::before {
+    content: '';
+    position: absolute;
+    inset: var(--sp-8) var(--sp-6);
+    border-radius: var(--radius-md);
+    background: var(--coipo-primary-light);
+}
+
+.nav-icon {
+    font-size: var(--fs-heading);
+    line-height: 1;
+    filter: grayscale(1);
+    opacity: 0.6;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-texto {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--fs-min);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+}
+
+.nav-item.active .nav-icon {
+    filter: grayscale(0);
+    opacity: 1;
+}
+
+.nav-item.active .nav-texto {
+    color: var(--coipo-primary-dark);
+    font-weight: 700;
+}
+
+/* Acción principal: círculo elevado, sin competir con el destino activo */
+.nav-add {
+    color: var(--coipo-primary-dark);
+    gap: var(--sp-2);
+}
+
+.nav-add-circle {
+    width: calc(var(--touch-min) + var(--sp-8));
+    height: calc(var(--touch-min) + var(--sp-8));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    background: var(--coipo-primary);
+    color: var(--coipo-on-primary);
+    font-size: var(--fs-heading);
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+    transform: translateY(calc(-1 * var(--sp-10)));
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-add-label {
+    font-size: var(--fs-min);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--coipo-primary-dark);
+}
+
+@media (hover: hover) {
+    .nav-item:hover {
+        color: var(--coipo-text);
+    }
+    .nav-add:hover .nav-add-circle {
+        transform: translateY(calc(-1 * var(--sp-12)));
+        filter: brightness(1.05);
+    }
+}
+
+.nav-item:active {
+    transform: scale(0.96);
+}
+
+.nav-add:active .nav-add-circle {
+    transform: translateY(calc(-1 * var(--sp-8))) scale(0.94);
+}

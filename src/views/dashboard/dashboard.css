@@ -428,91 +428,8 @@
 }
 
 
-/* ---------------- NAV FLOTANTE ---------------- */
-.bottom-nav {
-    position: fixed;
-    bottom: 24px; /* Un poco más de aire desde el fondo */
-    left: 12px;
-    right: 12px;
-    height: 75px;
-    
-    /* Aumentamos un poco la opacidad y usamos un color base más puro */
-    
-    /* El truco del borde: Un borde muy fino y claro genera el efecto de cristal */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    border-radius: 24px; /* Menos circular, más estilo 'Squircle' moderno */
-    
-    /* Sombra más profunda y difusa para separarlo de los cards */
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-}
-
-.nav-item {
-    background: none;
-    border: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-2);
-    flex: 1;
-    height: 100%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.nav-icon {
-    font-size: var(--fs-heading);
-    filter: grayscale(1); /* Los emojis se ven más serios si están apagados */
-    opacity: 0.5;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* Etiqueta debajo del icono (nav de 5 ítems: emoji arriba, texto abajo) */
-.nav-texto {
-    font-size: 0.66rem;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-    letter-spacing: -0.1px;
-    opacity: 0.85;
-    transition: opacity 0.2s ease;
-}
-.nav-item.active .nav-texto {
-    opacity: 1;
-    font-weight: 700;
-    color: var(--coipo-primary-dark);
-}
-
-/* --- ESTADO ACTIVO (El toque de Coipo) --- */
-.nav-item.active {
-    color: var(--coipo-primary-dark);
-    position: relative;
-}
-
-.nav-item.active .nav-icon {
-    opacity: 1;
-    filter: grayscale(0); /* Recupera el color original */
-    transform: translateY(-4px); /* Pequeño salto hacia arriba */
-}
-
-/* Indicador de punto debajo del icono activo */
-.nav-item.active::after {
-    content: '';
-    position: absolute;
-    bottom: 12px;
-    width: 5px;
-    height: 5px;
-    background-color: var(--coipo-primary);
-    border-radius: 50%;
-}
+/* La barra de navegación es un componente compartido: vive en
+   src/styles/components.css (.bottom-nav / .nav-item / .nav-add). */
 
 /* ---------------------- SECCIÓN COMIDAS (Ajustado) ----------------------*/
 /* --- BADGES DE CATEGORÍA (Reemplaza a meal-icon) --- */
@@ -1691,48 +1608,6 @@ summary.micros-summary-title {
 
 .hydration-collapsible .glasses-grid {
     margin-bottom: 0;
-}
-
-/* ===== NAV: BOTÓN ➕ DE REGISTRAR (acción principal) ===== */
-.nav-add {
-    gap: 3px;
-    color: var(--coipo-primary-dark);
-    font-weight: 700;
-    font-size: var(--fs-2xs);
-}
-
-.nav-add-circle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: var(--coipo-primary);
-    color: #fff;
-    font-size: 1.7rem;
-    font-weight: 700;
-    line-height: 1;
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
-    transition: transform 0.2s ease, filter 0.2s ease;
-}
-
-.nav-add-label {
-    line-height: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    font-size: 0.66rem;
-}
-
-@media (hover: hover) {
-    .nav-add:hover .nav-add-circle {
-        transform: translateY(-2px);
-        filter: brightness(1.05);
-    }
-}
-
-.nav-add:active .nav-add-circle {
-    transform: scale(0.92);
 }
 
 /* ===== BORRADO OPTIMISTA: la tarjeta/fila colapsa al instante ===== */

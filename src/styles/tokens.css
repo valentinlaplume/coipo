@@ -28,6 +28,7 @@
     --coipo-primary-rgb: 141, 160, 129; /* primario en canales RGB (sombras) */
     --coipo-primary-dark: #4A5D23;  /* verde profundo: hover/gradientes */
     --coipo-accent: #BEA892;        /* marrón tierra */
+    --coipo-on-primary: #FFFFFF;    /* texto/ícono sobre el verde de acción */
 
     /* Texto y contraste */
     --coipo-text: #1C1C1E;

@@ -186,6 +186,7 @@ export const registrarIngestaDesdeReceta = async (userId, dateKey, receta, gramo
         acumulado_vitamina_b12_mcg: increment(acumularMicro('total_vitamina_b12_mcg')),
         acumulado_omega3_ala_mg: increment(micros.total_omega3.ala_mg),
         acumulado_omega3_epa_dha_mg: increment(micros.total_omega3.epa_dha_mg),
+        comidas_count: increment(1),
         ultima_actualizacion: serverTimestamp()
     }, { merge: true });
 

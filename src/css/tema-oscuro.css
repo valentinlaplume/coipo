@@ -22,6 +22,7 @@ html[data-tema="oscuro"] {
     --coipo-primary-rgb: 136, 163, 124;
     --coipo-primary-dark: #B9D19B;
     --coipo-accent: #C7AE97;
+    --coipo-on-primary: #14161A;
 
     /* Sistema de mensajes (pasteles → tintes oscuros) */
     --coipo-success: #A8BC90;

@@ -30,6 +30,8 @@ import { buscarProductosUsuario, guardarItemsComoProductos, registrarUsoProducto
  } from '../../services/productos-usuario.service.js';
 import { renderPerfil } from '../perfil/perfil.view.js';
 import { renderSugerencias } from '../sugerencias/sugerencias.view.js';
+import { renderDiario } from '../diario/diario.view.js';
+import { bottomNavHTML, conectarBottomNav } from '../../components/bottom-nav.js';
 import { elegirTema, temaGuardado } from '../../utils/tema.js';
 import { hacerDeslizable, alRenderizar, hacerFilaDeslizable } from '../../utils/gestos.js';
 
@@ -51,6 +53,10 @@ export const limpiarCacheDashboard = () => {
 export const invalidarCacheDia = (dateKey) => {
     delete cacheSemanal[dateKey];
 };
+
+// Lectura de sólo lectura para el Diario: reutiliza las ingestas/resumen ya
+// cargados por el dashboard sin volver a pedir comidas a Firestore.
+export const obtenerDiaCache = (dateKey) => cacheSemanal[dateKey] || null;
 
 // Escape básico para inyectar texto externo (IA, productos, usuario) en HTML
 const esc = (texto) => String(texto ?? '')
@@ -352,16 +358,21 @@ const activarGestosDeModales = () => {
     });
 };
 
-export const renderDashboard = async (container, userData, fechaParaMostrar = new Date()) => {
+export const renderDashboard = async (container, userData, fechaParaMostrar = new Date(), opciones = {}) => {
     const userId = userData.uid;
+    const idHistorial = opciones.idHistorial || 'hoy';
+    const volverARender = (fecha = fechaParaMostrar) =>
+        renderDashboard(container, userData, fecha, opciones);
 
     // Gestos (etapa 1): arrastrar hacia abajo cierra cada modal/sheet
     activarGestosDeModales();
 
     // Gestos (etapa 2): esta pantalla queda en la pila → el arrastre desde el
     // borde izquierdo vuelve a la anterior (y actualiza el "restaurar" si es
-    // el mismo id: cambio de día, re-render tras registrar/borrar)
-    alRenderizar('hoy', () => renderDashboard(container, userData, fechaParaMostrar));
+    // el mismo id: cambio de día, re-render tras registrar/borrar).
+    // Cuando el día se abre desde el Diario, se usa un id propio para que el
+    // gesto de volver restaure el Diario (con la misma semana) en vez de Hoy.
+    alRenderizar(idHistorial, () => renderDashboard(container, userData, fechaParaMostrar, opciones));
 
     // Tema elegido en otro dispositivo (si acá nunca se eligió uno, manda el sistema)
     try { if (userData.tema && !temaGuardado()) elegirTema(userData.tema); } catch (e) { /* sin tema en la nube */ }
@@ -878,21 +889,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 </section>
             </div>
 
-            <nav class="bottom-nav">
-                <button class="nav-item active" id="nav-hoy">
-                    <span class="nav-icon">🏠</span><span class="nav-texto">Hoy</span>
-                </button>
-                <button class="nav-item" id="nav-sugerencias">
-                    <span class="nav-icon">💡</span><span class="nav-texto">Sugerencias</span>
-                </button>
-                <button class="nav-item nav-add" id="nav-registrar">
-                    <span class="nav-add-circle">+</span>
-                    <span class="nav-add-label">Registrar</span>
-                </button>
-                <button class="nav-item" id="nav-perfil">
-                    <span class="nav-icon">⚙️</span><span class="nav-texto">Perfil</span>
-                </button>
-            </nav>
+            ${bottomNavHTML('hoy')}
         </div>
     `;
 
@@ -902,7 +899,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
     container.querySelectorAll('.day-item').forEach(btn => {
         btn.onclick = () => {
             const nuevaFecha = new Date(btn.dataset.date + 'T12:00:00');
-            renderDashboard(container, userData, nuevaFecha);
+            volverARender(nuevaFecha);
         };
     });
 
@@ -917,7 +914,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             try {
                 const { corregido } = await recalcularResumenDia(userId, dateKey);
                 delete cacheSemanal[dateKey];
-                await renderDashboard(container, userData, fechaParaMostrar);
+                await volverARender();
                 mostrarToast(
                     corregido ? 'Ajustamos los totales del día' : 'Los totales del día ya estaban bien',
                     corregido ? 'info' : 'success',
@@ -1032,8 +1029,6 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         modalIA.style.display = "flex";
     };
     container.querySelector('#boton-registro-texto').onclick = abrirModalRegistro;
-    const navRegistrar = container.querySelector('#nav-registrar');
-    if (navRegistrar) navRegistrar.onclick = abrirModalRegistro;
 
     // Cierre a un toque (✕ de la cabecera)
     const btnCerrarIngesta = document.getElementById('cerrar-ingesta');
@@ -1079,7 +1074,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             
             delete cacheSemanal[dateKey];
             modalIA.style.display = "none";
-            renderDashboard(container, userData, fechaParaMostrar);
+            volverARender();
 
             microsPromise
                 .then(m  => enriquecerRegistroConMicros(userId, dateKey, docId, m))
@@ -1186,7 +1181,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
                 delete cacheSemanal[fechaSeleccionada];
                 cerrarIngesta();
-                await renderDashboard(container, userData, fechaParaMostrar);
+                await volverARender();
                 mostrarToast(`${gramos} g de "${item.nombre}" registrados`, 'success');
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             } catch (e) {
@@ -1465,7 +1460,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             try {
                 await restaurarIngesta(userId, dateKey, ingesta);
                 delete cacheSemanal[dateKey]; // el re-render descarga todo fresco
-                renderDashboard(container, userData, fechaParaMostrar);
+                volverARender();
             } catch (e) {
                 console.error('Error deshaciendo el borrado:', e);
                 mostrarToast('No se pudo deshacer', 'error');
@@ -1482,7 +1477,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 console.error('Error eliminando ingesta:', e);
                 mostrarToast('No se pudo borrar — restaurado', 'error');
                 delete cacheSemanal[dateKey]; // cache ya descontado → recargar fresco
-                renderDashboard(container, userData, fechaParaMostrar);
+                volverARender();
             }
         } else {
             mostrarToast(`"${nombre}" eliminado`, 'success');
@@ -1493,7 +1488,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                     console.error('Error eliminando ingesta:', e);
                     mostrarToast('No se pudo borrar — restaurado', 'error');
                     delete cacheSemanal[dateKey]; // cache ya descontado → recargar fresco
-                    renderDashboard(container, userData, fechaParaMostrar);
+                    volverARender();
                 });
         }
     };
@@ -1543,15 +1538,16 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         modalConfirm.style.display = "none";
     };
 
-    container.querySelector('#nav-hoy').onclick = () => renderDashboard(container, userData, new Date());
+    // ── Navegación inferior compartida ─────────────────────────────────────
+    conectarBottomNav(container, {
+        hoy: () => renderDashboard(container, userData, new Date(), { idHistorial: 'hoy' }),
+        diario: () => renderDiario(container, userData),
+        registrar: abrirModalRegistro,
+        sugerencias: () => renderSugerencias(container, userData),
+        perfil: () => renderPerfil(container, userData),
+    });
 
-    // SUGERENCIAS: desde la nav 💡
-    const navSugerencias = container.querySelector('#nav-sugerencias');
-    if (navSugerencias) navSugerencias.onclick = () => renderSugerencias(container, userData);
-
-    // PERFIL: desde la nav ⚙️ o desde el avatar del header
-    const navPerfil = container.querySelector('#nav-perfil');
-    if (navPerfil) navPerfil.onclick = () => renderPerfil(container, userData);
+    // PERFIL: también desde el avatar del header
     const avatarPerfil = container.querySelector('#avatar-perfil');
     if (avatarPerfil) avatarPerfil.onclick = () => renderPerfil(container, userData);
 
@@ -1635,7 +1631,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
                 // Invalidar cache del día activo y refrescar
                 delete cacheSemanal[dateKey];
-                await renderDashboard(container, userData, fechaParaMostrar);
+                await volverARender();
 
                 const nombreProducto = producto.nombre?.length > 30
                     ? producto.nombre.substring(0, 27) + '...'
@@ -2441,7 +2437,7 @@ document.getElementById('confirmar-porciones').onclick = async () => {
         extrasCalculados = null;
         document.getElementById('extras-receta').value = '';
         mostrarToast(`${gramos} g de "${nombre}"${extras ? ' + extras' : ''} registrados`, 'success');
-        renderDashboard(container, userData, fechaParaMostrar);
+        volverARender();
     } catch (e) {
         console.error('Error registrando receta:', e);
         mostrarToast(textoError(e, 'No se pudo registrar la receta'), 'error');

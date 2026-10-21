@@ -58,6 +58,8 @@ export const recalcularResumenDia = async (
     // acumulados viejos. Los campos desconocidos quedan en `null`.
     await setDoc(resumenRef, {
         ...resumen,
+        // El historial distingue "sin comidas" de un día con comidas de 0 kcal.
+        comidas_count: comidas.length,
         ultima_actualizacion: serverTimestamp(),
     });
 
