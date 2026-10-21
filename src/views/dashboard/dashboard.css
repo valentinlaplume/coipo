@@ -39,6 +39,80 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
+/* MENÚ DEL DÍA (opciones sobre la fecha: recalcular totales) */
+.dash-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+}
+
+.day-menu {
+    position: relative;
+}
+
+.day-menu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-min);
+    height: var(--touch-min);
+    border-radius: var(--radius-pill);
+    background: var(--coipo-card);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-title);
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    list-style: none;
+}
+
+.day-menu-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.day-menu[open] .day-menu-trigger {
+    background: var(--coipo-primary-light);
+}
+
+.day-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--sp-6));
+    min-width: 11rem;
+    padding: var(--sp-4);
+    background: var(--coipo-card);
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+    z-index: 30;
+}
+
+.day-menu-item {
+    width: 100%;
+    min-height: var(--touch-min);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--sp-12);
+    background: none;
+    border: 0;
+    border-radius: var(--radius-xs);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    text-align: left;
+    cursor: pointer;
+}
+
+.day-menu-item:active {
+    background: var(--coipo-surface);
+}
+
+.day-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* ALERTAS (Lesiones) */
 .alert-pill {
     display: none;

@@ -10,6 +10,8 @@ import { analizarComida, groqKeyManager
  } from '../../services/ai/groq.service.js';
 import { crearRegistroComida, eliminarIngesta, restaurarIngesta, actualizarHidratacion, enriquecerRegistroConMicros
  } from '../../services/db/meal.service.js';
+import { recalcularResumenDia } from '../../services/db/resumen-dia.service.js';
+import { calcularResumenDia, diferenciasResumen } from '../../services/db/resumen-dia.logic.mjs';
  import { guardarReceta, obtenerRecetas, registrarIngestaDesdeReceta,
     procesarReceta,
     prepararRecetaParaGuardar,
@@ -36,6 +38,8 @@ import { hacerDeslizable, alRenderizar, hacerFilaDeslizable } from '../../utils/
 let cacheSemanal = {};
 let cacheUserId = null; // Para evitar filtrar datos entre usuarios
 let contadorAguaLocal = 0;
+// Días con una reparación de totales en curso (evita disparos duplicados).
+const recalculosEnCurso = new Set();
 
 // Se llama desde main.js al cambiar/cerrar sesión
 export const limpiarCacheDashboard = () => {
@@ -492,6 +496,30 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         });
     };
 
+    // ── AUTO-REPARACIÓN DEL RESUMEN ──
+    // Si el total guardado no coincide con la suma real de las ingestas (por
+    // una escritura interrumpida, un borrado viejo, etc.), se corrige en
+    // background: no espera red ni bloquea el render. Solo avisa si corrigió.
+    const repararResumenSiHaceFalta = () => {
+        const calculado = calcularResumenDia(ingestas);
+        if (diferenciasResumen(resumen, calculado).length === 0) return;
+        if (recalculosEnCurso.has(dateKey)) return;
+
+        recalculosEnCurso.add(dateKey);
+        recalcularResumenDia(userId, dateKey)
+            .then(({ resumen: corregido, corregido: huboCambio }) => {
+                Object.assign(resumen, corregido);
+                const diaActivo = document.querySelector('.day-item.active')?.dataset.date;
+                if (diaActivo === dateKey) {
+                    actualizarResumenDOM();
+                    if (huboCambio) mostrarToast('Ajustamos los totales del día', 'info', 2200);
+                }
+            })
+            .catch(e => console.warn('⚠️ No se pudo recalcular el día:', e))
+            .finally(() => recalculosEnCurso.delete(dateKey));
+    };
+    repararResumenSiHaceFalta();
+
     // 2. RENDERIZADO DEL HTML
     container.innerHTML = `
         <div class="dashboard-layout fade-in">
@@ -499,7 +527,17 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 <div class="header-titles">
                     <p class="date-text">${fechaParaMostrar.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
                 </div>
-                <div class="profile-avatar" id="avatar-perfil" title="Mi perfil" style="cursor: pointer;"><i class="icon-user"></i></div>
+                <div class="dash-header-actions">
+                    <details class="day-menu" id="menu-dia">
+                        <summary class="day-menu-trigger" aria-label="Opciones del día" title="Opciones del día">
+                            <span aria-hidden="true">⋯</span>
+                        </summary>
+                        <div class="day-menu-panel">
+                            <button type="button" class="day-menu-item" id="recalcular-dia">Recalcular día</button>
+                        </div>
+                    </details>
+                    <div class="profile-avatar" id="avatar-perfil" title="Mi perfil" style="cursor: pointer;"><i class="icon-user"></i></div>
+                </div>
             </header>
 
             ${generarHTMLCalendario(fechaParaMostrar)}
@@ -866,6 +904,31 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             renderDashboard(container, userData, nuevaFecha);
         };
     });
+
+    // Menú del día → "Recalcular día": relee las comidas y reescribe los
+    // totales guardados (repara descuadres). Conserva los vasos de agua.
+    const btnRecalcularDia = container.querySelector('#recalcular-dia');
+    if (btnRecalcularDia) {
+        btnRecalcularDia.onclick = async () => {
+            const menu = container.querySelector('#menu-dia');
+            if (menu) menu.open = false;
+            btnRecalcularDia.disabled = true;
+            try {
+                const { corregido } = await recalcularResumenDia(userId, dateKey);
+                delete cacheSemanal[dateKey];
+                await renderDashboard(container, userData, fechaParaMostrar);
+                mostrarToast(
+                    corregido ? 'Ajustamos los totales del día' : 'Los totales del día ya estaban bien',
+                    corregido ? 'info' : 'success',
+                    2200,
+                );
+            } catch (e) {
+                console.error('Error al recalcular el día:', e);
+                btnRecalcularDia.disabled = false;
+                mostrarToast('No se pudo recalcular el día', 'error');
+            }
+        };
+    }
 
     // Agua: Actualización optimista + Actualización de Cache
     const glasses = container.querySelectorAll('.glass-item');
