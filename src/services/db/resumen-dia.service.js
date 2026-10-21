@@ -26,21 +26,31 @@ import {
  *
  * @param {string} userId
  * @param {string} dateKey YYYY-MM-DD (hora local)
- * @param {{resumenPrevio?: Object}} [opciones] resumenPrevio evita el getDoc
+ * @param {{resumenPrevio?: Object, ingestas?: Array}} [opciones]
+ *   `ingestas`: comidas ya cargadas en caché; evita el getDocs de la reparación
+ *   automática. `resumenPrevio`: evita además el getDoc del resumen.
  * @returns {Promise<{resumen: Object, anterior: Object, diferencias: Array, corregido: boolean}>}
  */
-export const recalcularResumenDia = async (userId, dateKey, { resumenPrevio = null } = {}) => {
+export const recalcularResumenDia = async (
+    userId,
+    dateKey,
+    { resumenPrevio = null, ingestas = null } = {},
+) => {
     const comidasRef = collection(db, 'usuarios', userId, 'ingestas_diarias', dateKey, 'comidas');
     const resumenRef = doc(db, 'usuarios', userId, 'resumen_diario', dateKey);
+    const ingestasEnCache = Array.isArray(ingestas) ? [...ingestas] : null;
 
+    // El chequeo automático ya tiene las comidas en caché: no se vuelven a leer.
+    // El resumen sí se relee (salvo que venga en `resumenPrevio`) para no pisar
+    // los vasos de agua con una copia vieja.
     const [comidasSnap, resumenSnap] = await Promise.all([
-        getDocs(comidasRef),
+        ingestasEnCache ? Promise.resolve(null) : getDocs(comidasRef),
         resumenPrevio ? Promise.resolve(null) : getDoc(resumenRef),
     ]);
 
     const anterior = resumenPrevio ?? (resumenSnap?.exists() ? resumenSnap.data() : {});
-    const ingestas = comidasSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const calculado = calcularResumenDia(ingestas);
+    const comidas = ingestasEnCache ?? comidasSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const calculado = calcularResumenDia(comidas);
     const resumen = prepararResumenParaGuardar(calculado, anterior);
     const diferencias = diferenciasResumen(anterior, calculado);
 

@@ -115,3 +115,29 @@ export const diferenciasResumen = (guardado = {}, calculado = {}, tolerancia = 1
     }
     return diferencias;
 };
+
+/**
+ * ¿Hay escrituras de comidas todavía sin confirmar? La fase 2 de micros deja
+ * `micros_completos: false` hasta que termina (o el campo falta en datos
+ * viejos). Mientras eso pase, el resumen puede estar a mitad de camino: no se
+ * toca automáticamente.
+ * @param {Array<Object>} ingestas
+ * @returns {boolean}
+ */
+export const hayEscriturasPendientes = (ingestas = []) =>
+    (Array.isArray(ingestas) ? ingestas : []).some(i => i?.micros_completos !== true);
+
+/**
+ * Criterio del chequeo automático al abrir un día: solo recalcular si todas
+ * las ingestas están confirmadas y el total guardado difiere de la suma real.
+ * Si hay algo pendiente se saltea y se reintenta en la próxima apertura.
+ * @param {Array<Object>} ingestas
+ * @param {Object} resumenGuardado
+ * @param {number} tolerancia
+ * @returns {boolean}
+ */
+export const necesitaRecalculoDia = (ingestas = [], resumenGuardado = {}, tolerancia = 1) => {
+    if (hayEscriturasPendientes(ingestas)) return false;
+    const calculado = calcularResumenDia(ingestas);
+    return diferenciasResumen(resumenGuardado, calculado, tolerancia).length > 0;
+};

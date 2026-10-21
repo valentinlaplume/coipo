@@ -11,7 +11,7 @@ import { analizarComida, groqKeyManager
 import { crearRegistroComida, eliminarIngesta, restaurarIngesta, actualizarHidratacion, enriquecerRegistroConMicros
  } from '../../services/db/meal.service.js';
 import { recalcularResumenDia } from '../../services/db/resumen-dia.service.js';
-import { calcularResumenDia, diferenciasResumen } from '../../services/db/resumen-dia.logic.mjs';
+import { necesitaRecalculoDia } from '../../services/db/resumen-dia.logic.mjs';
  import { guardarReceta, obtenerRecetas, registrarIngestaDesdeReceta,
     procesarReceta,
     prepararRecetaParaGuardar,
@@ -497,16 +497,16 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
     };
 
     // ── AUTO-REPARACIÓN DEL RESUMEN ──
-    // Si el total guardado no coincide con la suma real de las ingestas (por
-    // una escritura interrumpida, un borrado viejo, etc.), se corrige en
-    // background: no espera red ni bloquea el render. Solo avisa si corrigió.
+    // Usa las comidas YA cargadas en caché (cero lecturas extra). Solo escribe
+    // en Firestore cuando hace falta reparar. Si hay escrituras pendientes
+    // (comidas con `micros_completos` distinto de true), se saltea: el resumen
+    // todavía puede estar a mitad de camino. Se reintenta al reabrir el día.
     const repararResumenSiHaceFalta = () => {
-        const calculado = calcularResumenDia(ingestas);
-        if (diferenciasResumen(resumen, calculado).length === 0) return;
+        if (!necesitaRecalculoDia(ingestas, resumen)) return;
         if (recalculosEnCurso.has(dateKey)) return;
 
         recalculosEnCurso.add(dateKey);
-        recalcularResumenDia(userId, dateKey)
+        recalcularResumenDia(userId, dateKey, { ingestas })
             .then(({ resumen: corregido, corregido: huboCambio }) => {
                 Object.assign(resumen, corregido);
                 const diaActivo = document.querySelector('.day-item.active')?.dataset.date;
@@ -1082,6 +1082,11 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
             microsPromise
                 .then(m  => enriquecerRegistroConMicros(userId, dateKey, docId, m))
+                // Si el día se abrió mientras los micros estaban pendientes,
+                // la caché quedó con micros_completos=false. Al terminar, se
+                // invalida para que la próxima apertura relea y pueda
+                // autoevaluar/reparar el resumen.
+                .then(() => { delete cacheSemanal[dateKey]; })
                 .catch(e => console.warn("⚠️ Micros no disponibles:", e.message));
 
         } catch (e) {

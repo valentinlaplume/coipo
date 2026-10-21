@@ -8,6 +8,8 @@ import {
     CAMPOS_RESUMEN,
     calcularResumenDia,
     diferenciasResumen,
+    hayEscriturasPendientes,
+    necesitaRecalculoDia,
     prepararResumenParaGuardar,
 } from '../src/services/db/resumen-dia.logic.mjs';
 
@@ -82,6 +84,30 @@ test('redondea a dos decimales al sumar', () => {
         ingesta({ total_fibra: 0.2 }),
     ]);
     assert.equal(resumen.acumulado_fibra, 0.3);
+});
+
+test('no recalcula mientras haya escrituras pendientes (micros_completos ≠ true)', () => {
+    const pendiente = [{
+        resumen_macros: { total_calorias: 500 },
+        micros_completos: false,
+    }];
+    const resumenDescuadrado = { acumulado_calorias: 999 };
+
+    assert.equal(hayEscriturasPendientes(pendiente), true);
+    // Aunque el total no coincida, se saltea: la fase 2 todavía puede cambiarlo.
+    assert.equal(necesitaRecalculoDia(pendiente, resumenDescuadrado), false);
+
+    // Sin el flag también cuenta como pendiente (datos a medio escribir).
+    const sinFlag = [{ resumen_macros: { total_calorias: 500 } }];
+    assert.equal(hayEscriturasPendientes(sinFlag), true);
+    assert.equal(necesitaRecalculoDia(sinFlag, resumenDescuadrado), false);
+
+    // Con todas confirmadas, el descuadre sí dispara el recálculo.
+    const confirmadas = [{ resumen_macros: { total_calorias: 500 }, micros_completos: true }];
+    const resumenCorrecto = calcularResumenDia(confirmadas);
+    assert.equal(hayEscriturasPendientes(confirmadas), false);
+    assert.equal(necesitaRecalculoDia(confirmadas, resumenDescuadrado), true);
+    assert.equal(necesitaRecalculoDia(confirmadas, resumenCorrecto), false);
 });
 
 test('conserva vasos_agua al preparar el documento a guardar', () => {
