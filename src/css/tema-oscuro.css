@@ -60,7 +60,7 @@ html[data-tema="oscuro"] body {
 
 /* Scrollbars suaves en tonos oscuros */
 html[data-tema="oscuro"]::-webkit-scrollbar { width: 8px; height: 8px; }
-html[data-tema="oscuro"]::-webkit-scrollbar-thumb { background: #363B47; border-radius: 8px; }
+html[data-tema="oscuro"]::-webkit-scrollbar-thumb { background: #363B47; border-radius: var(--radius-xs); }
 html[data-tema="oscuro"]::-webkit-scrollbar-track { background: transparent; }
 
 /* Selección de texto */

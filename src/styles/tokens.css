@@ -1,0 +1,107 @@
+/* src/styles/tokens.css ══════════════════════════════════════════════════════
+   BASE DE ESTILOS DE COIPO — única fuente de variables globales.
+
+   Reemplaza a src/css/variables.css y a los :root que onboarding.css y
+   dashboard.css definían por encima (se cargaban después y pisaban valores
+   de TODA la app). Los valores de este archivo son exactamente los que la
+   app venía renderizando por cascada: no cambia ni un píxel.
+
+   Reglas del proyecto (detalle en .agents/skills/ui-coach/SKILL.md):
+   • Todo componente nuevo usa tokens de acá: nada de hex ni px sueltos.
+   • Los tokens de COLOR cambian en tema oscuro (tema-oscuro.css los
+     sobrescribe con html[data-tema="oscuro"]): son los únicos que se
+     adaptan. Los literales de color heredados NO se migraron a propósito
+     para no alterar el tema oscuro.
+   • --fs-min (14 px) es el piso de legibilidad; --touch-min (44 px) el de
+     targets táctiles; --touch-fila (56 px) el de filas navegables.
+   • Los radios NO son escalera 8/12/16/20: --radius-md = 12 px y
+     --radius-lg = 20 px son valores históricos que se mantienen.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Color: paleta orgánica ───────────────────────────────────────── */
+    --coipo-bg: #F5F7F4;            /* fondo global (crema claro) */
+    --coipo-surface: #F2EFE9;       /* gris con tinte oliva: inputs y superficies */
+    --coipo-card: #FFFFFF;          /* tarjetas */
+    --coipo-primary: #8DA081;       /* verde acción */
+    --coipo-primary-dark: #4A5D23;  /* verde profundo: hover/gradientes */
+    --coipo-accent: #BEA892;        /* marrón tierra */
+
+    /* Texto y contraste */
+    --coipo-text: #1C1C1E;
+    --coipo-text-light: #8E8E93;
+    --coipo-text-muted: #757575;
+
+    /* Sistema de mensajes (pasteles) */
+    --coipo-success: #A3B18A;
+    --coipo-error: #E07A5F;
+    --coipo-warning: #F2CC8F;
+    --coipo-info: #81B29A;
+
+    /* Macros (barras y aros) */
+    --prot-color: #FF5E3A;
+    --carb-color: #FFCC00;
+    --fat-color: #34C759;
+
+    /* ── Radios (valores heredados, NO son una escala regular) ─────────── */
+    --radius-xs: 8px;
+    --radius-thumb: 10px;           /* miniaturas e íconos de fila */
+    --radius-md: 12px;              /* botones, inputs, chips, tarjetas chicas */
+    --radius-lg: 20px;              /* modales y tarjetas grandes */
+    --radius-pill: 999px;           /* píldoras y botones redondos */
+
+    /* ── Espaciado: el número es el píxel (--sp-8 = 8 px) ─────────────── */
+    --sp-2: 2px;
+    --sp-4: 4px;
+    --sp-6: 6px;
+    --sp-8: 8px;
+    --sp-10: 10px;
+    --sp-12: 12px;
+    --sp-14: 14px;
+    --sp-15: 15px;
+    --sp-16: 16px;
+    --sp-18: 18px;
+    --sp-20: 20px;
+    --sp-24: 24px;
+
+    /* ── Tipografía (valores exactos en uso; el px real va en comentario) ── */
+    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --fs-3xs: 0.7rem;               /* 11.2 px */
+    --fs-2xs: 0.72rem;              /* 11.5 px */
+    --fs-caption: 0.75rem;          /* 12 px */
+    --fs-xs: 0.8rem;                /* 12.8 px */
+    --fs-hint: 0.85rem;             /* 13.6 px */
+    --fs-min: 0.875rem;             /* 14 px — piso de legibilidad */
+    --fs-body: 0.9rem;              /* 14.4 px */
+    --fs-base: 0.95rem;             /* 15.2 px */
+    --fs-lg: 1rem;                  /* 16 px */
+    --fs-title: 1.1rem;             /* 17.6 px */
+    --fs-heading: 1.5rem;           /* 24 px */
+
+    /* ── Targets táctiles ──────────────────────────────────────────────── */
+    --touch-min: 44px;              /* piso de todo control tocable */
+    --touch-md: 48px;               /* botones grandes */
+    --touch-fila: 56px;             /* filas de lista navegables */
+
+    /* ── Semántica compartida (se adaptan en modo oscuro) ───────────────── */
+    --coipo-border: rgba(61, 64, 91, 0.10);
+    --coipo-border-strong: rgba(61, 64, 91, 0.22);
+    --coipo-overlay: rgba(61, 64, 91, 0.72);
+    --coipo-row: #FAFAFA;
+    --coipo-chip-dark-bg: #1C1C1E;
+    --coipo-tint-error: #FFF0F0;
+    --coipo-tint-warning: #FFF9E6;
+    --coipo-tint-success: #F0FFF8;
+    --coipo-tint-info: #F0F4FF;
+    --coipo-tint-agua: #E3EBF1;
+    --coipo-danger-strong: #FF3B30;
+    --coipo-success-text: #2E9E6B;
+    --coipo-info-text: #5A7AB5;
+    --coipo-info-strong: #2C5282;
+    --coipo-warning-strong: #8A5A00;
+    --coipo-accent-text: #7A6851;
+    --skeleton-a: #ECECEC;
+    --skeleton-b: #F7F7F7;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

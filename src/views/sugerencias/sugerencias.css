@@ -12,7 +12,7 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--sp-12);
     margin-bottom: 12px;
 }
 
@@ -20,7 +20,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 10px;
+    gap: var(--sp-10);
 }
 
 .sug-header-top h1 {
@@ -40,9 +40,9 @@
     flex-shrink: 0;
     background: transparent;
     border: 1px solid var(--coipo-surface);
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     padding: 7px 10px;
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     color: var(--coipo-text-muted, #7E7E7E);
     cursor: pointer;
@@ -60,7 +60,7 @@
 .sug-kcal {
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-bottom: 10px;
 }
 
@@ -86,12 +86,12 @@
     display: grid;
     grid-template-columns: 66px 1fr auto;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 7px;
 }
 
 .sug-barra-nombre {
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     color: var(--coipo-text);
 }
@@ -127,18 +127,18 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sp-10);
 }
 
 .sug-momento {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-8);
 }
 
 .sug-momento-label {
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.6px;
@@ -149,7 +149,7 @@
 .sug-momento-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--sp-6);
     width: 100%;
 }
 .sug-momento-chips .pill {
@@ -181,7 +181,7 @@
 .sug-chat {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sp-10);
     margin-top: 14px;
 }
 
@@ -189,7 +189,7 @@
     max-width: 94%;
     padding: 12px 14px;
     border-radius: 16px;
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     line-height: 1.45;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     animation: sugAparecer 0.25s ease;
@@ -219,17 +219,17 @@
     max-width: 80%;
 }
 
-.sug-pregunta { font-weight: 700; font-size: 0.95rem; }
+.sug-pregunta { font-weight: 700; font-size: var(--fs-base); }
 
 .sug-nota {
     color: var(--coipo-text-muted, #7E7E7E);
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
 }
 
 .sug-pista {
     display: block;
     margin-top: 5px;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     color: var(--coipo-text-muted, #7E7E7E);
 }
 
@@ -237,14 +237,14 @@
 .sug-opciones {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 10px;
 }
 .sug-opciones .pill {
     flex: 1 1 30%;
     padding: 10px 12px;
     font-size: 0.86rem;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     text-align: center;
     transition: transform 0.15s ease;
@@ -260,7 +260,7 @@
 .sug-intents {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 10px;
 }
 
@@ -272,9 +272,9 @@
     text-align: left;
     background: var(--coipo-card);
     border: 1px solid rgba(141, 160, 129, 0.45);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 11px 13px;
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     font-weight: 600;
     color: var(--coipo-text);
     cursor: pointer;
@@ -282,7 +282,7 @@
 }
 .sug-intent::after {
     content: '›';
-    font-size: 1.1rem;
+    font-size: var(--fs-title);
     color: var(--coipo-primary);
     font-weight: 700;
 }
@@ -292,8 +292,8 @@
 .sug-pensando {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
+    gap: var(--sp-8);
+    font-size: var(--fs-hint);
     color: var(--coipo-text-muted, #7E7E7E);
 }
 
@@ -302,11 +302,11 @@
     background: var(--coipo-card);
     border: 1px solid rgba(0, 0, 0, 0.04);
     border-radius: 16px;
-    padding: 14px;
+    padding: var(--sp-14);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sp-10);
     animation: sugAparecer 0.25s ease;
 }
 .sug-card-ok { opacity: 0.7; border-color: rgba(163, 177, 138, 0.7); }
@@ -315,7 +315,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--sp-8);
 }
 .sug-card-top h4 {
     margin: 0;
@@ -326,7 +326,7 @@
 
 .sug-factor {
     flex-shrink: 0;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--coipo-primary-dark);
     background: rgba(141, 160, 129, 0.16);
@@ -348,7 +348,7 @@
 
 .sug-porcion {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     color: var(--coipo-text);
 }
 .sug-porcion b {
@@ -361,7 +361,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 10px;
+    gap: var(--sp-10);
     font-size: 0.82rem;
     font-weight: 600;
     color: var(--coipo-text);
@@ -382,7 +382,7 @@
 
 .sug-motivo {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     line-height: 1.4;
     color: var(--coipo-text-muted, #7E7E7E);
 }
@@ -391,7 +391,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
 }
 
 .sug-btn-registrar { min-width: 140px; }
@@ -404,12 +404,12 @@
 .sug-libre-campos {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: var(--sp-8);
 }
 .sug-libre-campos label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--sp-4);
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -421,21 +421,21 @@
     box-sizing: border-box;
     padding: 8px 10px;
     border: 1px solid var(--coipo-surface);
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     background: var(--coipo-bg);
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
     color: var(--coipo-text);
 }
 
 /* Feedback 👍/👎 */
-.sug-votos { display: flex; gap: 6px; }
+.sug-votos { display: flex; gap: var(--sp-6); }
 .sug-voto {
     width: 36px;
     height: 36px;
     border-radius: 50%;
     border: 1px solid var(--coipo-surface);
     background: var(--coipo-card);
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     line-height: 1;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -461,10 +461,10 @@
     margin-top: 9px;
     padding: 10px 12px;
     border: 1px solid var(--coipo-surface);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--coipo-bg);
     font: inherit;
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     color: var(--coipo-text);
     resize: vertical;
 }
@@ -473,11 +473,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
     margin-top: 8px;
 }
 .sug-counter {
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     color: var(--coipo-text-muted, #7E7E7E);
     font-variant-numeric: tabular-nums;
 }
@@ -487,14 +487,14 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 4px;
 }
 
 .sug-error-btns {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 9px;
 }
 
@@ -504,7 +504,7 @@
     border: 1px solid rgba(141, 160, 129, 0.5);
     background: var(--coipo-card);
     color: var(--coipo-primary-dark);
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     cursor: pointer;
     transition: transform 0.15s ease, background 0.15s ease;
@@ -514,7 +514,7 @@
 /* ── Disclaimer ──────────────────────────────────────────────────────── */
 .sug-disclaimer {
     text-align: center;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     line-height: 1.4;
     color: var(--coipo-text-muted, #7E7E7E);
     opacity: 0.9;

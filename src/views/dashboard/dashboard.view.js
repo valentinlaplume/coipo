@@ -1,6 +1,9 @@
 import { db } from '../../firebase-config.js';
 import { doc, getDoc, collection, getDocs,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 import { calcularPlanNutricional } from '../../utils/nutrition-logic.js';
+// Chips de momento del día en "Nueva Ingesta": misma regla de horas que el
+// asistente de sugerencias (lógica pura, sin dependencias nuevas)
+import { momentoPorHora } from '../../utils/sugerencias-logic.js';
 // import { analizarComida, keyManager } from '../../services/ai/gemini.service.js';
 import { analizarComida, groqKeyManager
     , analizarReceta
@@ -853,24 +856,72 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
     // Modales: Registro IA — se abre desde la tarjeta "¿Qué comiste?" O desde el ➕ de la nav
     const modalIA = document.getElementById('modal-registro');
+
+    // ── Pestañas de la hoja (Buscar / Recetas / IA): solo se ve la activa ──
+    const panelesIngesta = {
+        buscar: document.getElementById('ingesta-panel-buscar'),
+        recetas: document.getElementById('ingesta-panel-recetas'),
+        ia: document.getElementById('ingesta-panel-ia'),
+    };
+    const activarTabIngesta = (cual) => {
+        Object.entries(panelesIngesta).forEach(([clave, panel]) => {
+            if (panel) panel.hidden = clave !== cual;
+        });
+        document.querySelectorAll('#modal-registro .ingesta-tab').forEach(tab => {
+            const activa = tab.dataset.tab === cual;
+            tab.classList.toggle('active', activa);
+            tab.setAttribute('aria-selected', String(activa));
+        });
+        if (cual === 'recetas') cargarRecetasEnIngesta();
+    };
+    document.querySelectorAll('#modal-registro .ingesta-tab').forEach(tab => {
+        tab.onclick = () => activarTabIngesta(tab.dataset.tab);
+    });
+
+    // ── Chips de momento: preselección por hora local, editable (solo UI) ──
+    const contMomentos = document.getElementById('ingesta-momentos');
+    if (contMomentos) {
+        contMomentos.querySelectorAll('.ingesta-momento').forEach(chip => {
+            chip.onclick = () => {
+                contMomentos.querySelectorAll('.ingesta-momento').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            };
+        });
+    }
+    const preseleccionarMomento = () => {
+        if (!contMomentos) return;
+        const sugerido = momentoPorHora(new Date().getHours());
+        contMomentos.querySelectorAll('.ingesta-momento').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.momento === sugerido);
+        });
+    };
+
+    // El CTA de IA arranca DESHABILITADO y se activa con el primer texto
+    const textareaIA = document.getElementById('texto-comida');
+    const btnAnalizarIA = document.getElementById('confirmar-modal');
+    const sincronizarBotonIA = () => {
+        if (btnAnalizarIA) btnAnalizarIA.disabled = !(textareaIA?.value || '').trim();
+    };
+    if (textareaIA) textareaIA.oninput = sincronizarBotonIA;
+    sincronizarBotonIA();
+
     const abrirModalRegistro = () => {
         document.getElementById('texto-comida').value = "";
-        // Cada apertura arranca con la búsqueda limpia: el usuario ve primero
-        // el campo de "Buscar alimento" y no coincidencias de la sesión anterior
+        sincronizarBotonIA();
+        // Cada apertura arranca en la pestaña Buscar, con la búsqueda limpia y
+        // el momento del día sugerido por la hora
         resetearBusqueda();
+        activarTabIngesta('buscar');
+        preseleccionarMomento();
         modalIA.style.display = "flex";
     };
     container.querySelector('#boton-registro-texto').onclick = abrirModalRegistro;
     const navRegistrar = container.querySelector('#nav-registrar');
     if (navRegistrar) navRegistrar.onclick = abrirModalRegistro;
 
-    // Cierre a un toque (✕ de la cabecera) — mismo camino que "Cancelar"
+    // Cierre a un toque (✕ de la cabecera)
     const btnCerrarIngesta = document.getElementById('cerrar-ingesta');
     if (btnCerrarIngesta) btnCerrarIngesta.onclick = () => { modalIA.style.display = "none"; };
-
-    document.getElementById('cancelar-modal').onclick = () => {
-        modalIA.style.display = "none";
-    };
 
     document.getElementById('confirmar-modal').onclick = async () => {
         const btn         = document.getElementById('confirmar-modal');
@@ -951,26 +1002,27 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         const cerrarIngesta = () => { modalIA.style.display = 'none'; };
 
         const accionesSinResultados = (consulta) => `
-            <div>Sin resultados para "<b>${esc(consulta)}</b>".</div>
+            <div class="off-sin-resultados">No encontramos «<b>${esc(consulta)}</b>»</div>
             ${atajosRegistrar()}`;
 
         // Atajos siempre disponibles cuando NO hay nada que mostrar: la
-        // alternativa es cargarlo con IA o a mano (queda en "Tus productos")
+        // alternativa es describirlo con IA o cargarlo a mano
         const atajosRegistrar = () => `
             <div class="off-acciones">
-                <button type="button" class="btn-primary" data-accion="ia">🧠 Estimar con IA</button>
+                <button type="button" class="btn-primary" data-accion="ia">🧠 Describir con IA</button>
                 <button type="button" class="btn-secondary" data-accion="manual">✏️ Cargar manual</button>
             </div>`;
 
-        // Los atajos NO cambian de modal: bajan al último paso de la MISMA
-        // hoja (la sección de IA, al fondo). "Estimar" precarga la consulta;
-        // "manual" deja el textarea limpio para que escriba lo suyo.
+        // Los atajos NO registran solos: llevan a la pestaña IA de la MISMA
+        // hoja. "Describir" precarga la consulta; "manual" deja el textarea
+        // limpio para que escriba lo suyo.
         const enfocarIA = (consulta) => {
             const textarea = document.getElementById('texto-comida');
             if (!textarea) return;
             if (typeof consulta === 'string') textarea.value = consulta;
-            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => textarea.focus({ preventScroll: true }), 260);
+            sincronizarBotonIA();
+            activarTabIngesta('ia');
+            setTimeout(() => textarea.focus({ preventScroll: true }), 60);
         };
 
         const engancharAtajos = (consulta) => {
@@ -1016,26 +1068,72 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             }
         };
 
-        const pintarResultados = (resultados, consulta) => {
-            listaBuscar.innerHTML = resultados.map((item, i) => `
-                <button type="button" class="off-fila" data-indice="${i}" role="option">
-                    ${item.imagen
-                        ? `<img src="${esc(item.imagen)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
-                        : '<img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E" alt="">'}
+        // UI de la lista: 6 filas y un «Ver más». El listado se colapsa solo
+        // cuando cambia la consulta, así no hay estado que resetear a mano.
+        const RESULTADOS_VISIBLES = 6;
+        let consultaExpandida = null;
+
+        // Miniatura de 40 px: la foto del producto o un ícono de comida
+        const miniatura = (item) => item.imagen
+            ? `<img src="${esc(item.imagen)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+            : '<span class="off-fila-icono" aria-hidden="true">🍽️</span>';
+
+        const filaResultado = (item, indice) => {
+            // "Sin marca" no aporta nada: el subtítulo del grupo ya dice de
+            // dónde viene el producto
+            const marca = (item.marca || '').trim();
+            const conMarca = marca && marca !== 'Sin marca';
+            return `
+                <button type="button" class="off-fila" data-indice="${indice}" role="option">
+                    ${miniatura(item)}
                     <span class="off-fila-texto">
                         <span class="off-fila-nombre">${esc(item.nombre)}</span>
-                        <span class="off-fila-marca">${esc(item.marca || (item.fuente === 'propio' ? 'Tus productos' : 'Sin marca'))}</span>
+                        ${conMarca ? `<span class="off-fila-marca">${esc(marca)}</span>` : ''}
                     </span>
                     <span class="off-fila-kcal">${Math.round(Number(item.kcal100) || 0)} kcal/100 g</span>
-                </button>`).join('');
+                    <span class="off-fila-chevron" aria-hidden="true">›</span>
+                </button>`;
+        };
+
+        const pintarResultados = (resultados, consulta) => {
+            // Agrupados por fuente: primero lo propio, después Open Food Facts.
+            // Un grupo vacío no se muestra (y su subtítulo tampoco).
+            const grupos = [
+                { titulo: 'TUS PRODUCTOS', items: resultados.filter(r => r.fuente === 'propio') },
+                { titulo: 'OPEN FOOD FACTS', items: resultados.filter(r => r.fuente !== 'propio') },
+            ].filter(g => g.items.length);
+
+            const total = grupos.reduce((n, g) => n + g.items.length, 0);
+            const expandida = consultaExpandida === consulta;
+            let restantes = expandida ? total : RESULTADOS_VISIBLES;
+
+            listaBuscar.innerHTML = grupos.map(grupo => {
+                const visibles = grupo.items.slice(0, Math.max(restantes, 0));
+                restantes -= visibles.length;
+                const filas = visibles
+                    .map(item => filaResultado(item, resultados.indexOf(item))).join('');
+                return `<div class="off-grupo">${grupo.titulo}</div>${filas}`;
+            }).join('');
 
             estadoBuscar.innerHTML = `
-                <div>${resultados.length} resultado${resultados.length === 1 ? '' : 's'} — tocá uno para registrar</div>`;
+                <div>${total} resultado${total === 1 ? '' : 's'} — tocá uno para registrar</div>`;
             if (fuenteBuscar) fuenteBuscar.innerHTML = pieDeFuente(resultados);
 
             listaBuscar.querySelectorAll('.off-fila').forEach(btn => {
                 btn.onclick = () => elegirAlimento(resultados[Number(btn.dataset.indice)]);
             });
+
+            // «Ver más»: aparece solo si quedaron filas fuera de las 6 visibles
+            const btnMas = document.getElementById('buscar-alimento-ver-mas');
+            const ocultos = Math.max(total - (expandida ? total : RESULTADOS_VISIBLES), 0);
+            if (btnMas) {
+                btnMas.hidden = ocultos === 0;
+                btnMas.textContent = ocultos > 0 ? `Ver más (${ocultos})` : 'Ver más';
+                btnMas.onclick = () => {
+                    consultaExpandida = consulta;
+                    pintarResultados(resultados, consulta);
+                };
+            }
         };
 
         // Crédito de los datos: "Tus productos" y/o "Datos de Open Food Facts"
@@ -1150,6 +1248,55 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 dispararBusqueda();
             };
         }
+    }
+
+    // ── Pestaña Recetas: Mis Recetas con kcal/porción. Tocar una fila = usarla
+    //    (mismo camino que "Usar Receta": va directo al paso de gramos) ──────
+    const contRecetasIngesta = document.getElementById('ingesta-recetas-lista');
+    const cargarRecetasEnIngesta = async () => {
+        if (!contRecetasIngesta) return;
+        contRecetasIngesta.innerHTML = [1, 2, 3].map(() => `
+            <div class="skeleton-fila">
+                <div class="skeleton-linea skeleton-ancho-60"></div>
+                <div class="skeleton-linea skeleton-ancho-40"></div>
+            </div>`).join('');
+        try {
+            const recetas = await obtenerRecetas(userId);
+            if (!recetas.length) {
+                contRecetasIngesta.innerHTML =
+                    '<p class="ingesta-vacio">Todavía no tenés recetas guardadas.</p>';
+                return;
+            }
+            const ordenadas = [...recetas].sort((a, b) => kcalTotalesReceta(b) - kcalTotalesReceta(a));
+            contRecetasIngesta.innerHTML = ordenadas.map(r => `
+                <button type="button" class="ingesta-receta-fila" data-id="${esc(r.id)}">
+                    <span class="ingesta-receta-nombre">${esc(r.nombre)}</span>
+                    <span class="ingesta-receta-kcal">${Math.round(r.totales_macros_porcion?.calorias || 0)} kcal/porción</span>
+                    <span class="off-fila-chevron" aria-hidden="true">›</span>
+                </button>`).join('');
+            contRecetasIngesta.querySelectorAll('.ingesta-receta-fila').forEach(fila => {
+                fila.onclick = () => {
+                    const receta = ordenadas.find(r => r.id === fila.dataset.id);
+                    if (!receta) return;
+                    modalIA.style.display = 'none';
+                    abrirModalGramos(receta);   // idéntico a "Usar Receta"
+                };
+            });
+        } catch (e) {
+            console.error('Error cargando recetas en Nueva Ingesta:', e);
+            contRecetasIngesta.innerHTML =
+                '<p class="ingesta-vacio">No se pudieron cargar tus recetas. Probá de nuevo.</p>';
+        }
+    };
+
+    // "Crear una receta" dentro de la pestaña: mismo formulario de siempre
+    const btnNuevaRecetaIngesta = document.getElementById('ingesta-nueva-receta');
+    if (btnNuevaRecetaIngesta) {
+        btnNuevaRecetaIngesta.onclick = () => {
+            modalIA.style.display = 'none';
+            const btnCrear = container.querySelector('#btn-registrar-receta');
+            if (btnCrear) btnCrear.click(); else abrirSelectorRecetas();
+        };
     }
 
     // Acordeón: mostrar/ocultar el detalle de ingredientes de cada tarjeta
@@ -2033,15 +2180,8 @@ if (btnUsarReceta) {
     btnUsarReceta.onclick = abrirSelectorRecetas;
 }
 
-// 🍲 Atajo dentro del modal "Nueva Ingesta": si el usuario recordó que era receta, va directo al selector
-const btnElegirRecetaModal = document.getElementById('elegir-receta-modal');
-if (btnElegirRecetaModal) {
-    btnElegirRecetaModal.onclick = () => {
-        modalSelectReceta.style.display = 'none';
-        document.getElementById('modal-registro').style.display = 'none';
-        abrirSelectorRecetas();
-    };
-}
+// 🍲 El atajo "Elegir de Mis Recetas" del modal viejo ahora es la pestaña
+//    "Recetas" de Nueva Ingesta (su lista vive en #ingesta-recetas-lista)
 
 // --- DETALLE: cerrar / usar / eliminar con confirmación en el modal ---
 document.getElementById('cerrar-detalle-receta').onclick = () => {

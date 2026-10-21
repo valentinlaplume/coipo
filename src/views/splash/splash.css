@@ -19,7 +19,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px; 
+    gap: var(--sp-10); 
     margin-bottom: 20px;
 }
 
@@ -47,7 +47,7 @@
 .splash-tagline {
     display: block;
     color: var(--coipo-text-muted);
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     margin-bottom: 40px;
     font-weight: 500;
 }
@@ -57,7 +57,7 @@
     width: 100%;
     height: 6px; /* Un pelín más gruesa para que se vea mejor */
     background-color: var(--coipo-surface);
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
@@ -71,7 +71,7 @@
 .splash-status {
     display: block;
     margin-top: 15px;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     color: var(--coipo-text-muted);
 }
 

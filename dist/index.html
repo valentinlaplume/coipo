@@ -23,13 +23,13 @@
     <link rel="icon" type="image/png" href="./assets/logo-Bdt1JR1y.png" sizes="32x32">
     <link rel="icon" type="image/png" href="./assets/logo-Bdt1JR1y.png" sizes="16x16">
     <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="./assets/logo-Bdt1JR1y.png">
-
+
 
     <!-- último: sobrescribe los :root en modo oscuro -->
-  <script type="module" crossorigin src="./assets/index-BO1140M0.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/preload-helper-BzujO3ED.js">
-  <link rel="modulepreload" crossorigin href="./assets/main-VQvkDICc.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-CCpzVLfo.css">
+  <script type="module" crossorigin src="./assets/index-CqJfSSKz.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/preload-helper-RtIDjDSO.js">
+  <link rel="modulepreload" crossorigin href="./assets/main-wn4vhKhn.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-DcqOlvGW.css">
 </head>
 <body>
     <div id="app"></div>
@@ -40,29 +40,37 @@
          → 3) describir y "Analizar Comida con IA" (último: gasta cuota).
          La búsqueda de alimento vive DENTRO de esta hoja: las coincidencias
          salen en un div con scroll propio, sin tapar el resto del formulario. -->
+    <!-- Nueva Ingesta: hoja con PESTAÑAS — Buscar (por defecto) / Recetas / IA.
+         Cabecera, chips de momento y pestañas quedan fijas; solo scrollea el
+         contenido de la pestaña activa. -->
     <div id="modal-registro" class="modal-overlay ingesta-overlay" style="display: none;">
         <div class="modal-content ingesta-modal">
 
             <header class="ingesta-header">
-                <div class="ingesta-header-texto">
-                    <h3>Nueva Ingesta</h3>
-                    <p>Encontrá el producto o usá una receta; la IA es el último paso.</p>
-                </div>
+                <h3>Nueva ingesta</h3>
                 <button type="button" id="cerrar-ingesta" class="ingesta-cerrar" aria-label="Cerrar">✕</button>
             </header>
 
+            <!-- Momento del día: preseleccionado por hora, editable -->
+            <div class="ingesta-momentos" id="ingesta-momentos" role="group" aria-label="Momento del día">
+                <button type="button" class="ingesta-momento" data-momento="desayuno">☀️ Desayuno</button>
+                <button type="button" class="ingesta-momento" data-momento="almuerzo">🍽️ Almuerzo</button>
+                <button type="button" class="ingesta-momento" data-momento="merienda">🍵 Merienda</button>
+                <button type="button" class="ingesta-momento" data-momento="cena">🌙 Cena</button>
+                <button type="button" class="ingesta-momento" data-momento="snack">🍎 Snack</button>
+            </div>
+
+            <!-- Pestañas (segmented control): una sola visible a la vez -->
+            <div class="ingesta-tabs" role="tablist" aria-label="Cómo querés registrar">
+                <button type="button" class="ingesta-tab active" id="ingesta-tab-buscar" data-tab="buscar" role="tab" aria-selected="true">🔍 Buscar</button>
+                <button type="button" class="ingesta-tab" id="ingesta-tab-recetas" data-tab="recetas" role="tab" aria-selected="false">🍲 Recetas</button>
+                <button type="button" class="ingesta-tab" id="ingesta-tab-ia" data-tab="ia" role="tab" aria-selected="false">✨ IA</button>
+            </div>
+
             <div class="ingesta-cuerpo">
 
-                <!-- 1️⃣ BUSCAR ALIMENTO (Tus productos + Open Food Facts) -->
-                <section class="ingesta-seccion">
-                    <div class="ingesta-seccion-titulo">
-                        <span class="ingesta-icono" aria-hidden="true">🔍</span>
-                        <span>Buscar alimento</span>
-                        <span class="ingesta-chip ingesta-chip-rapido">Más rápido</span>
-                    </div>
-                    <p class="ingesta-seccion-hint">Primero en Tus productos (los que cargaste a mano o con IA) y después en Open Food Facts, con prioridad para los de Argentina.</p>
-
-                    <!-- Fila de búsqueda: input flexible + botón fijo; la ✕ vive DENTRO -->
+                <!-- 🔍 BUSCAR: fila corregida (.search-resultados agrupados -->
+                <section class="ingesta-panel" id="ingesta-panel-buscar" role="tabpanel">
                     <form id="buscar-alimento-form" autocomplete="off">
                         <div class="search-row">
                             <div class="search-field">
@@ -74,44 +82,34 @@
                         </div>
                     </form>
 
-                    <!-- Estado: spinner, atajos si no hay resultados, errores -->
+                    <!-- Estado: spinner, mensajes, atajos si no hay resultados -->
                     <div id="buscar-alimento-estado" class="off-estado" aria-live="polite"></div>
 
-                    <!-- Coincidencias: lista con scroll propio (no ocupa la hoja entera) -->
+                    <!-- Coincidencias: agrupadas por fuente (TUS PRODUCTOS / OFF) -->
                     <div id="buscar-alimento-resultados" class="off-resultados" role="listbox" aria-label="Resultados"></div>
 
-                    <!-- Crédito de los datos, siempre visible bajo la lista -->
+                    <!-- Se muestra solo si quedan filas detrás de los primeros 6 -->
+                    <button type="button" id="buscar-alimento-ver-mas" class="off-ver-mas" hidden>Ver más</button>
+
+                    <!-- Crédito de los datos, al final -->
                     <div id="buscar-alimento-fuente" class="off-fuente-slot" aria-live="polite"></div>
                 </section>
 
-                <!-- 2️⃣ RECETA (cálculo local, sin IA) -->
-                <section class="ingesta-seccion">
-                    <div class="ingesta-seccion-titulo">
-                        <span class="ingesta-icono" aria-hidden="true">🍲</span>
-                        <span>¿Era una receta?</span>
-                        <span class="ingesta-chip">Al instante</span>
-                    </div>
-                    <p class="ingesta-seccion-hint">Si ya la guardaste en Mis Recetas, sale al toque con sus macros.</p>
-                    <button id="elegir-receta-modal" class="btn-secondary btn-block ingesta-btn">Elegir de Mis Recetas</button>
+                <!-- 🍲 RECETAS: Mis Recetas con kcal por porción; fila = usarla -->
+                <section class="ingesta-panel" id="ingesta-panel-recetas" role="tabpanel" hidden>
+                    <div id="ingesta-recetas-lista" class="ingesta-recetas"></div>
+                    <button type="button" id="ingesta-nueva-receta" class="btn-secondary btn-block ingesta-btn">＋ Crear una receta</button>
                 </section>
 
-                <!-- 3️⃣ DESCRIPCIÓN + IA (lo último: gasta recursos) -->
-                <section class="ingesta-seccion ingesta-seccion-ia">
-                    <div class="ingesta-seccion-titulo">
-                        <span class="ingesta-icono" aria-hidden="true">✍️</span>
-                        <span>Contale a Coipo</span>
-                        <span class="ingesta-chip ingesta-chip-ia">Gasta IA</span>
-                    </div>
-                    <p class="ingesta-seccion-hint">Último recurso: la IA gasta cuota de la API. Si encontrás el producto arriba o es una receta, es más rápido y preciso.</p>
+                <!-- ✨ IA: describir y analizar (la única acción primaria) -->
+                <section class="ingesta-panel" id="ingesta-panel-ia" role="tabpanel" hidden>
+                    <h4 class="ingesta-ia-titulo">Describí lo que comiste</h4>
                     <textarea id="texto-comida" placeholder="Ej: Una ensalada César con pollo y un vaso de agua..."></textarea>
+                    <p class="ingesta-ia-hint">Usa cuota de IA. Probá buscar primero.</p>
+                    <button type="button" id="confirmar-modal" class="btn-primary ingesta-btn-primario" disabled>🧠 Analizar con IA</button>
                 </section>
 
             </div>
-
-            <footer class="ingesta-pie">
-                <button type="button" id="cancelar-modal" class="btn-secondary ingesta-btn-secundario">Cancelar</button>
-                <button type="button" id="confirmar-modal" class="btn-primary ingesta-btn-primario">🧠 Analizar Comida con IA</button>
-            </footer>
 
         </div>
     </div>

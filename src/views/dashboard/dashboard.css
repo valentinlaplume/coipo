@@ -1,16 +1,5 @@
 /* src/views/dashboard/dashboard.css */
-
-:root {
-    --coipo-bg: #F5F7F4;
-    --coipo-card: #FFFFFF;
-    --coipo-primary: #8DA081;
-    --coipo-primary-dark: #4A5D23;
-    --coipo-text: #1C1C1E;
-    --coipo-text-light: #8E8E93;
-    --prot-color: #FF5E3A;
-    --carb-color: #FFCC00;
-    --fat-color: #34C759;
-}
+/* (Los tokens globales viven ahora en src/styles/tokens.css) */
 
 .dashboard-layout {
     padding: 20px 20px 120px 20px; /* Espacio para el nav y el FAB */
@@ -28,7 +17,7 @@
 }
 
 .date-text {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 700;
     color: var(--coipo-primary);
     letter-spacing: 1px;
@@ -54,12 +43,12 @@
 .alert-pill {
     display: none;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
     background: var(--coipo-tint-error);
     padding: 10px 15px;
     border-radius: 50px;
     margin-bottom: 15px;
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     color: var(--coipo-danger-strong);
 }
 
@@ -74,7 +63,7 @@
 
 .energy-timeline-section {
     background: var(--coipo-card);
-    padding: 20px;
+    padding: var(--sp-20);
     border-radius: 24px;
     margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
@@ -100,7 +89,7 @@
 }
 
 .main-kcal .label {
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     color: var(--coipo-text-light);
     font-weight: 600;
 }
@@ -109,9 +98,9 @@
     display: flex;
     flex-direction: column;
     text-align: right;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     color: var(--coipo-text-light);
-    gap: 2px;
+    gap: var(--sp-2);
 }
 
 .secondary-stats b {
@@ -162,7 +151,7 @@
 .timeline-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     color: var(--coipo-text-light);
     font-weight: 700;
     text-transform: uppercase;
@@ -178,7 +167,7 @@
 
 .macros-summary-card {
     background: var(--coipo-card);
-    padding: 20px;
+    padding: var(--sp-20);
     border-radius: 24px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.03); /* Misma sombra que el círculo de kcal para consistencia */
     display: grid;
@@ -189,7 +178,7 @@
 .macro-text-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--sp-4);
     /* Un pequeño detalle UX: un borde de color a la izquierda para identificar rápido el macro */
     border-left: 3px solid transparent;
     padding-left: 12px;
@@ -202,7 +191,7 @@
 .macro-text-item.fiber { border-color: #A1887F; } /* Un tono tierra para la fibra */
 
 .macro-text-item .macro-label {
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--coipo-text-light);
     text-transform: uppercase;
@@ -210,7 +199,7 @@
 }
 
 .macro-text-item .macro-value {
-    font-size: 1.1rem;
+    font-size: var(--fs-title);
     font-weight: 800;
     color: var(--coipo-text);
 }
@@ -219,33 +208,33 @@
 
 .water-card {
     background: var(--coipo-card);
-    padding: 20px;
+    padding: var(--sp-20);
     border-radius: 24px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.03);
 }
 
 .water-counter {
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     color: var(--coipo-text-light);
     font-weight: 600;
 }
 
 .water-counter b {
     color: var(--coipo-info-strong); /* Azul agua */
-    font-size: 1rem;
+    font-size: var(--fs-lg);
 }
 
 .glasses-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); /* Se ajusta solo al ancho */
-    gap: 12px;
+    gap: var(--sp-12);
     margin-bottom: 15px;
 }
 
 .glass-item {
     aspect-ratio: 1/1;
     background: var(--coipo-bg);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,7 +262,7 @@
 }
 
 .water-meta-text {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     color: var(--coipo-text-light);
     text-align: center;
     margin: 0;
@@ -282,13 +271,13 @@
 
 /* HABITOS DIARIOS */
 .daily-habits h3 {
-    font-size: 1.1rem;
+    font-size: var(--fs-title);
     margin-bottom: 5px;
 }
 
 .habit-card {
     background: var(--coipo-card);
-    padding: 15px;
+    padding: var(--sp-15);
     border-radius: 16px;
     display: flex;
     justify-content: space-between;
@@ -298,7 +287,7 @@
 .habit-info {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: var(--sp-15);
 }
 
 .habit-icon {
@@ -398,7 +387,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--sp-2);
     flex: 1;
     height: 100%;
     cursor: pointer;
@@ -406,7 +395,7 @@
 }
 
 .nav-icon {
-    font-size: 1.5rem;
+    font-size: var(--fs-heading);
     filter: grayscale(1); /* Los emojis se ven más serios si están apagados */
     opacity: 0.5;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -455,12 +444,12 @@
 /* --- BADGES DE CATEGORÍA (Reemplaza a meal-icon) --- */
 .meal-badge {
     width: 44px;
-    height: 44px;
-    border-radius: 12px; /* Estilo Apple: cuadrado muy redondeado */
+    height: var(--touch-min);
+    border-radius: var(--radius-md); /* Estilo Apple: cuadrado muy redondeado */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: var(--fs-title);
     font-weight: 900;
     color: white;
     flex-shrink: 0;
@@ -475,11 +464,11 @@
 
 .meal-item {
     background: var(--coipo-card);
-    padding: 16px;
+    padding: var(--sp-16);
     border-radius: 22px;
     display: flex;
     align-items: flex-start; /* Badge alineado arriba */
-    gap: 14px;
+    gap: var(--sp-14);
     margin-bottom: 10px;
 }
 
@@ -494,7 +483,7 @@
 
 .meal-info strong { 
     display: block; 
-    font-size: 0.95rem; 
+    font-size: var(--fs-base); 
     color: var(--coipo-text); 
     white-space: nowrap;
     overflow: hidden;
@@ -502,7 +491,7 @@
 }
 
 .meal-info p { 
-    font-size: 0.8rem; 
+    font-size: var(--fs-xs); 
     color: var(--coipo-text-light); 
     margin: 2px 0 0; 
 }
@@ -529,19 +518,19 @@
 }
 
 .meal-subtitle {
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     color: var(--coipo-text-light);
     font-weight: 600;
 }
 
 .meal-kcal {
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     font-weight: 800;
     color: var(--coipo-primary-dark);
 }
 
 .meal-unit {
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     color: #999;
     text-transform: uppercase;
@@ -551,7 +540,7 @@
 .meal-item-macros {
     display: grid;
     grid-template-columns: repeat(4, 1fr); /* 4 columnas exactas e iguales */
-    gap: 8px;
+    gap: var(--sp-8);
     width: 100%;
 }
 .m-tag {
@@ -559,16 +548,16 @@
     display: flex;
     justify-content: center; /* Centra el contenido "P: 4g" */
     padding: 6px 4px;
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 800;
-    border-radius: 8px;
+    border-radius: var(--radius-xs);
     background: var(--coipo-surface);
     /* Los bordes de colores que ya tenías se mantienen aquí */
 
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 800;
     padding: 3px 8px;
-    border-radius: 8px;
+    border-radius: var(--radius-xs);
     background: var(--coipo-surface);
     color: var(--coipo-text);
 }
@@ -576,7 +565,7 @@
 /* --- MACROS POTENCIADOS --- */
 .meal-item-macros {
     display: flex;
-    gap: 6px;
+    gap: var(--sp-6);
     margin-top: 8px;
 }
 
@@ -611,7 +600,7 @@
 
 /* --- ESTILO BASE DE LAS ETIQUETAS --- */
 .m-tag {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 800;
     padding: 3px 8px;
     border-radius: 4px 8px 8px 4px; /* Redondeamos más el lado derecho que el izquierdo */
@@ -624,7 +613,7 @@
     text-align: right;
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: var(--sp-4);
 }
 
 .meal-kcal {
@@ -666,7 +655,7 @@
 
 /* MODAL DETALLE (Preview) */
 .meal-detail-sheet {
-    padding: 20px;
+    padding: var(--sp-20);
     background: var(--coipo-card);
     border-radius: 30px 30px 0 0;
 }
@@ -675,14 +664,14 @@
     width: 40px;
     height: 5px;
     background: #E5E5EA;
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     margin: 0 auto 20px;
 }
 
 .micros-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--sp-8);
     margin-top: 10px;
 }
 
@@ -691,7 +680,7 @@
     color: var(--coipo-primary-dark);
     padding: 6px 12px;
     border-radius: 50px;
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 700;
 }
 
@@ -700,7 +689,7 @@
     display: flex;
     justify-content: flex-start; /* Alinea todo al inicio (izquierda) */
     align-items: center;
-    gap: 12px; /* Espacio entre el título y el botón */
+    gap: var(--sp-12); /* Espacio entre el título y el botón */
     margin-top: 20px;
     margin-bottom: 10px;
 }
@@ -713,7 +702,7 @@
     font-weight: 700;
     cursor: pointer;
     padding: 6px 10px; /* Más compacto para que parezca un "badge" de acción */
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     transition: all 0.2s ease;
 }
 
@@ -749,7 +738,7 @@
     border: none;
     background: var(--coipo-primary);
     color: white;
-    font-size: 1.5rem;
+    font-size: var(--fs-heading);
     box-shadow: 0 4px 10px rgba(var(--coipo-primary-rgb), 0.3);
     transition: transform 0.2s;
 }
@@ -796,7 +785,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 8px 4px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: none;
     background: transparent;
     margin: 0px 6px;
@@ -816,7 +805,7 @@
 }
 
 .day-name {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     text-transform: uppercase;
     font-weight: 700;
     margin-bottom: 4px;
@@ -828,7 +817,7 @@
 }
 
 .day-number {
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     font-weight: 800;
     color: var(--coipo-text);
 }
@@ -859,7 +848,7 @@
     border: 1px solid #d0daf5;
     font-size: 0.68rem;
     padding: 2px 7px;
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     font-weight: 500;
 }
 
@@ -888,17 +877,17 @@
 .macros-grid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Crea las 2 columnas */
-    gap: 15px;
+    gap: var(--sp-15);
     padding: 10px 0;
 }
 
 .macro-card {
     background: var(--coipo-card); /* O el color de fondo que prefieras */
-    padding: 12px;
-    border-radius: 12px;
+    padding: var(--sp-12);
+    border-radius: var(--radius-md);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--sp-6);
     box-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
 }
 
@@ -906,20 +895,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     font-weight: bold;
     
 }
 
 .macro-name { color: var(--coipo-text-muted); }
-.macro-values { color: var(--coipo-text); font-size: 0.8rem; }
+.macro-values { color: var(--coipo-text); font-size: var(--fs-xs); }
 
 /* Contenedor de la barra (el fondo gris) */
 .progress-bar-container {
     width: 100%;
     height: 8px;
     background-color: #e0e0e0;
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     overflow: hidden;
     
 }
@@ -927,7 +916,7 @@
 /* Relleno de la barra */
 .progress-fill {
     height: 100%;
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     transition: width 0.5s ease-in-out;
 }
 
@@ -937,7 +926,7 @@
 .fiber { background-color: #747d8c; } /* Gris/Azul */
 
 .progress-percent {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     color: var(--coipo-text-muted);
     text-align: right;
 }
@@ -950,13 +939,13 @@
 details {
     background: var(--coipo-card);
     border: 1px solid var(--coipo-border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
 }
 
 summary {
     list-style: none;
-    padding: 15px;
+    padding: var(--sp-15);
     font-weight: bold;
     cursor: pointer;
     display: flex;
@@ -970,7 +959,7 @@ summary::-webkit-details-marker {
 }
 
 .micros-content {
-    padding: 15px;
+    padding: var(--sp-15);
     border-top: 1px solid var(--coipo-border);
     background-color: var(--coipo-row);
 }
@@ -986,7 +975,7 @@ details[open] .icon-arrow {
 /* Contenedor del desplegable */
 .micros-collapsible {
     margin: 15px 0;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--coipo-card);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     overflow: hidden;
@@ -996,9 +985,9 @@ details[open] .icon-arrow {
 /* Estilo del "Botón" de control */
 summary.micros-summary-title {
     list-style: none;
-    padding: 15px;
+    padding: var(--sp-15);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
     color: var(--coipo-text);
     cursor: pointer;
     display: flex;
@@ -1019,7 +1008,7 @@ summary::-webkit-details-marker {
 .micros-grid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* 2 por fila */
-    gap: 15px;
+    gap: var(--sp-15);
 }
 
 /* Permitir que elementos específicos ocupen todo el ancho si es necesario */
@@ -1032,8 +1021,8 @@ summary::-webkit-details-marker {
     flex-direction: column;
     gap: 5px;
     background: var(--coipo-card);
-    padding: 8px;
-    border-radius: 8px;
+    padding: var(--sp-8);
+    border-radius: var(--radius-xs);
 }
 
 .micro-header-info {
@@ -1043,13 +1032,13 @@ summary::-webkit-details-marker {
 }
 
 .micro-label {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 600;
     color: var(--coipo-text-muted);
 }
 
 .micro-value {
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--coipo-text);
 }
@@ -1059,14 +1048,14 @@ summary::-webkit-details-marker {
     width: 100%;
     height: 6px; /* Más delgada que los macros */
     background-color: #edf2f7;
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     overflow: hidden;
 }
 
 .micro-fill {
     height: 100%;
     background-color: #4299e1; /* Azul estándar para metas */
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     transition: width 0.4s ease-out;
 }
 
@@ -1082,7 +1071,7 @@ summary::-webkit-details-marker {
 /* Estilo del Desplegable */
 details {
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
 }
 
 summary.micros-summary-title {
@@ -1110,7 +1099,7 @@ summary.micros-summary-title {
 .meal-card-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
     padding: 14px 16px;
     border-bottom: 1px solid var(--coipo-border);
     background: var(--coipo-row);
@@ -1135,7 +1124,7 @@ summary.micros-summary-title {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-2);
 }
 
 .meal-name {
@@ -1178,7 +1167,7 @@ summary.micros-summary-title {
     border: none;
     color: #ccc;
     cursor: pointer;
-    padding: 4px;
+    padding: var(--sp-4);
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -1196,13 +1185,13 @@ summary.micros-summary-title {
     padding: 10px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-8);
 }
 
 .meal-item-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-8);
     font-size: 13px;
 }
 
@@ -1241,16 +1230,16 @@ summary.micros-summary-title {
 /* Macros por ingrediente: punto de color del app + texto (sin emojis) */
 .meal-item-macros {
     display: flex;
-    gap: 12px;
+    gap: var(--sp-12);
     padding-left: 10px;
     margin-top: 1px;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     color: var(--coipo-text-muted);
 }
 .meal-item-macros span {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-4);
 }
 .meal-item-macros span::before {
     content: '';
@@ -1268,7 +1257,7 @@ summary.micros-summary-title {
 .meal-detalle-toggle {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-6);
     width: 100%;
     padding: 10px 16px 8px;
     background: none;
@@ -1309,7 +1298,7 @@ summary.micros-summary-title {
     align-items: center;
     padding: 10px 4px;
     background: var(--coipo-card);
-    gap: 2px;
+    gap: var(--sp-2);
 }
 
 .pill-label {
@@ -1336,7 +1325,7 @@ summary.micros-summary-title {
 .meal-micros-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--sp-6);
     padding: 10px 16px;
     border-top: 1px solid var(--coipo-border);
     background: var(--coipo-row);
@@ -1345,10 +1334,10 @@ summary.micros-summary-title {
 .micro-chip {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-4);
     background: var(--coipo-tint-info);
     border: 1px solid #dde5ff;
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     padding: 3px 9px;
 }
 
@@ -1378,7 +1367,7 @@ summary.micros-summary-title {
 .meal-micros-loading {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-4);
     padding: 8px 16px;
     font-size: 11px;
     color: #bbb;
@@ -1411,8 +1400,8 @@ summary.micros-summary-title {
 /* Ajuste opcional para el detalle */
 .meal-item-macros-detail {
     display: flex; 
-    gap: 10px; 
-    font-size: 0.75rem; 
+    gap: var(--sp-10); 
+    font-size: var(--fs-caption); 
     color: var(--coipo-text-muted); 
     padding-left: 18px; 
     margin-top: 2px;
@@ -1446,7 +1435,7 @@ summary.micros-summary-title {
     box-sizing: border-box;
 }
 
-.scanner-header h3 { color: #fff; margin: 0; font-size: 1.1rem; font-weight: 600; }
+.scanner-header h3 { color: #fff; margin: 0; font-size: var(--fs-title); font-weight: 600; }
 
 #reader-wrapper {
     position: relative;
@@ -1498,7 +1487,7 @@ summary.micros-summary-title {
 .scanner-hint {
     color: #ccc;
     margin-bottom: 30px;
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     text-align: center;
 }
 
@@ -1542,7 +1531,7 @@ summary.micros-summary-title {
     backdrop-filter: blur(8px);
     padding: 10px 20px;
     border-radius: 40px;
-    margin: 20px;
+    margin: var(--sp-20);
     font-weight: 500;
 }
 
@@ -1551,7 +1540,7 @@ summary.micros-summary-title {
 .submenu-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
+    gap: var(--sp-12);
     margin: 20px 0;
     padding: 0 4px;
 }
@@ -1564,7 +1553,7 @@ summary.micros-summary-title {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-8);
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.03);
@@ -1580,7 +1569,7 @@ summary.micros-summary-title {
 }
 
 .action-label {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 600;
     color: var(--coipo-text-light);
     text-transform: uppercase;
@@ -1598,7 +1587,7 @@ summary.micros-summary-title {
 
 /* ===== HIDRATACIÓN — ACORDEÓN (mismo estilo que Micronutrientes) ===== */
 .hydration-collapsible .micros-summary-title {
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
     color: var(--coipo-text);
 }
 
@@ -1606,7 +1595,7 @@ summary.micros-summary-title {
 .hydration-title-group {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
     flex-wrap: wrap;
 }
 
@@ -1614,7 +1603,7 @@ summary.micros-summary-title {
 .hydration-badge {
     background: var(--coipo-tint-agua);
     padding: 3px 10px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--coipo-info-strong);
@@ -1635,7 +1624,7 @@ summary.micros-summary-title {
     gap: 3px;
     color: var(--coipo-primary-dark);
     font-weight: 700;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
 }
 
 .nav-add-circle {
@@ -1691,86 +1680,8 @@ summary.micros-summary-title {
    (index.html) — los estilos .off-* son compartidos.
    ───────────────────────────────────────────────────────────── */
 
-/* ── Fila de búsqueda ────────────────────────────────────────────────────────
-   Clases PROPIAS (.search-*): no heredan nada de los estilos viejos del modal
-   de OFF, así el input siempre se queda con el ancho que sobra. */
-.search-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Columna del input: crece con todo lo que sobra y deja sitio a la ✕,
-   que va APILADA encima (no le come ancho al input) */
-.search-field {
-    position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
-    box-sizing: border-box;
-}
-
-.search-input {
-    width: 100%;
-    height: 44px;
-    box-sizing: border-box;
-    padding: 0 40px 0 12px;          /* 40px a la derecha: aire para la ✕ */
-    font-size: 1rem;
-    border: 1px solid var(--coipo-surface);
-    border-radius: 12px;
-    background: var(--coipo-bg);
-    color: var(--coipo-text);
-}
-.search-input:focus { outline: 2px solid var(--coipo-accent); outline-offset: 1px; }
-
-/* El ✕ nativo del input[type=search] duplicaría el nuestro */
-.search-input::-webkit-search-cancel-button,
-.search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
-
-/* ✕ de limpiar: DENTRO del input, a la derecha, sin achicarlo */
-.search-clear {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: none;
-    border-radius: 999px;
-    background: var(--coipo-surface);
-    color: var(--coipo-text-muted);
-    font-size: 0.85rem;
-    line-height: 1;
-    cursor: pointer;
-    z-index: 1;
-}
-.search-clear:active { background: var(--coipo-accent); color: #fff; }
-
-/* Oculta mientras el HTML la traiga marcada (estado inicial: sin texto)… */
-.search-clear[hidden] { display: none; }
-/* …y se muestra sola en cuanto el input tiene texto, con puro CSS */
-.search-field .search-input:not(:placeholder-shown) ~ .search-clear { display: grid; }
-
-/* Botón «Buscar»: ancho propio, no se comprime ni crece */
-.search-btn {
-    flex: 0 0 auto;
-    height: 44px;
-    padding: 0 16px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: var(--coipo-primary);
-    color: #fff;
-    font-family: var(--font-main);
-    font-size: 0.95rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-}
-.search-btn:active { filter: brightness(0.92); }
+/* (La fila .search-row / input con botón vive ahora en
+   src/styles/components.css) */
 
 /* Estado: spinner / mensajes / atajos (no bloquea el input) */
 .off-estado {
@@ -1793,78 +1704,72 @@ summary.micros-summary-title {
 }
 @keyframes off-girar { to { transform: rotate(360deg); } }
 
-/* Resultados: lista scrolleable con foto + nombre + marca + kcal/100 g */
+/* Resultados: el scroll lo hace el cuerpo de la hoja; vacía no ocupa nada */
 .off-resultados {
-    margin-top: 8px;
-    overflow-y: auto;
-    flex: 1;
+    margin-top: 6px;
     -webkit-overflow-scrolling: touch;
 }
+.off-resultados:empty { display: none; }
 
-.off-fila {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+/* Subtítulo de grupo: "TUS PRODUCTOS" / "OPEN FOOD FACTS" */
+.off-grupo {
+    margin: 12px 8px 2px;
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--coipo-text-muted);
+}
+
+/* (Las filas .off-fila de resultados viven ahora en src/styles/components.css) */
+
+/* «Ver más»: solo aparece si quedaron filas detrás de las 6 visibles
+   (si la lista está vacía, la regla siguiente lo mantiene oculto) */
+.off-ver-mas {
+    display: block;
     width: 100%;
-    padding: 9px 8px;
+    min-height: var(--touch-min);
+    margin-top: 6px;
+    padding: 8px 12px;
     border: none;
-    background: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
+    background: var(--coipo-surface);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    font-weight: 600;
     cursor: pointer;
-    text-align: left;
+}
+.off-ver-mas:active { background: var(--coipo-accent); color: #fff; }
+.off-ver-mas[hidden] { display: none; }
+/* Lista vacía → nunca un «Ver más» huérfano, aunque el JS lo haya dejado visible */
+#buscar-alimento-resultados:empty ~ .off-ver-mas { display: none; }
+
+/* Sin resultados: mensaje + alternativas (IA / manual) */
+.off-sin-resultados {
+    margin-top: 8px;
+    font-size: var(--fs-base);
     color: var(--coipo-text);
 }
-.off-fila:active { background: var(--coipo-surface); }
 
-.off-fila img {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    object-fit: cover;
-    background: var(--coipo-surface);
-    flex-shrink: 0;
+/* Atajos cuando no hay resultados: Describir con IA / Cargar manual */
+.off-acciones { display: flex; gap: var(--sp-8); margin-top: 10px; flex-wrap: wrap; }
+.off-acciones button {
+    flex: 1;
+    min-width: 130px;
+    min-height: var(--touch-min);
+    font-size: var(--fs-min);
+    padding: var(--sp-10);
 }
-
-.off-fila-texto { flex: 1; min-width: 0; }
-
-.off-fila-nombre {
-    display: block;          /* así el recorte con … funciona (en inline no) */
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.off-fila-marca {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--coipo-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.off-fila-kcal {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--coipo-accent-text);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-/* Atajos cuando no hay resultados: Estimar con IA / Cargar manual */
-.off-acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.off-acciones button { flex: 1; min-width: 130px; font-size: 0.85rem; padding: 10px; }
 
 /* Crédito de los datos: "Tus productos" y/o "Datos de Open Food Facts" */
 .off-fuente {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-6);
     flex-wrap: wrap;
     margin-top: 4px;
-    font-size: 0.72rem;
+    font-size: var(--fs-2xs);
     color: var(--coipo-text-muted);
 }
 .off-fuente a {
@@ -1879,5 +1784,3 @@ summary.micros-summary-title {
    resultados, no ocupa un solo píxel */
 .off-fuente-slot:not(:empty) { margin-top: 9px; }
 
-/* Tema oscuro */
-[data-tema='oscuro'] .off-fila:active { background: #23262C; }

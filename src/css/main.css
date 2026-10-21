@@ -1,4 +1,4 @@
-@import './variables.css'; /* Importamos las variables aquí */
+@import '../styles/tokens.css'; /* Importamos las variables aquí */
 
 * {
     margin: 0;
@@ -36,49 +36,8 @@ body {
 /* Nota: antes había acá un primer bloque .modal-overlay/.modal-content/#texto-comida
    duplicado; se eliminó porque este bloque de abajo lo sobrescribía igual. */
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--coipo-overlay); /* fondo de modal, adaptado por tema */
-    backdrop-filter: blur(6px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 20px;
-}
-
-.modal-content {
-    background-color: var(--coipo-bg);
-    padding: 2rem;
-    border-radius: var(--radius-lg);
-    width: 100%;
-    max-width: 450px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--coipo-surface);
-}
-
-/* Celular promedio (≤480px): menos padding → más ancho útil para el contenido */
-@media (max-width: 480px) {
-    .modal-overlay { padding: 12px; }
-    .modal-content { padding: 1.25rem 1.15rem; }
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: var(--coipo-text);
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-}
-
-.modal-content p {
-    color: var(--coipo-text-muted);
-    font-size: 0.95rem;
-    margin-bottom: 1.5rem;
-}
+/* (Modal base: .modal-overlay/.modal-content/.modal-actions viven ahora en
+   src/styles/components.css) */
 
 /* Textarea Orgánico */
 #texto-comida {
@@ -91,7 +50,7 @@ body {
     border: 2px solid transparent;
     border-radius: var(--radius-md);
     font-family: var(--font-main);
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     color: var(--coipo-text);
     resize: none;
     outline: none;
@@ -109,75 +68,8 @@ body {
     opacity: 0.6;
 }
 
-/* Contenedor de botones */
-.modal-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-    width: 100%;
-}
-
-/* Estilo Base de Botones en Modal */
-.modal-actions button {
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    font-family: var(--font-main);
-    flex: 1; /* Ambos miden lo mismo */
-    transition: all 0.3s ease;
-}
-
-/* Fila con 4 botones (detalle de receta: Editar/Usar/Eliminar/Cerrar) */
-.modal-actions-compact button {
-    padding: 12px 6px;
-    font-size: 0.88rem;
-    white-space: nowrap;
-}
-
-/* Botón Analizar (Acción Verde) */
-.btn-primary {
-    background-color: var(--coipo-primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    filter: brightness(0.9);
-    transform: translateY(-2px);
-}
-
-.btn-primary:disabled {
-    background-color: var(--coipo-text-muted);
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Botón Cancelar (Marrón Tierra o Gris) */
-.btn-secondary {
-    background-color: var(--coipo-surface);
-    color: var(--coipo-text);
-}
-
-.btn-secondary:hover {
-    background-color: var(--coipo-accent);
-    color: white;
-}
-
-/* BORRAR INGESTA */
-
-/* Variación para el botón de eliminar */
-.btn-danger {
-    background-color: var(--coipo-error);
-    color: white;
-}
-
-.btn-danger:hover {
-    filter: brightness(0.9);
-    transform: translateY(-2px);
-}
+/* (Botones .btn-primary/.btn-secondary/.btn-danger/.btn-block viven ahora
+   en src/styles/components.css) */
 
 /* Ajuste fino para el modal de confirmación */
 .confirm-modal {
@@ -194,17 +86,17 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   NUEVA INGESTA — hoja a PANTALLA COMPLETA (mobile-first, mismo lenguaje
-   visual que el resto de Coipo: tarjetas redondeadas, paleta orgánica,
-   targets de ≥44 px y CTA de IA SIEMPRE al final del recorrido).
-   Orden UX: buscar producto → receta → describir y "Analizar con IA".
+   NUEVA INGESTA — hoja con PESTAÑAS (mobile-first, mismo lenguaje visual que
+   el resto de Coipo: paleta orgánica, targets de ≥44 px).
+   Cabecera + chips de momento + pestañas quedan FIJAS; solo scrollea el
+   contenido de la pestaña activa (Buscar → Recetas → IA).
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Overlay a sangre: sin margen, la hoja ocupa el alto completo.
+/* Hoja acotada: nunca más de 92dvh y sin margen a los costados.
    En desktop la columna sigue midiendo lo mismo que #app (500 px). */
 .modal-overlay.ingesta-overlay {
     padding: 0;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
 }
 
@@ -213,30 +105,25 @@ body {
     flex-direction: column;
     width: 100%;
     max-width: 500px;
-    height: 100vh;
-    height: 100dvh;          /* alto real en móviles (barra del navegador) */
-    max-height: none;
+    height: auto;
+    max-height: 92dvh;        /* tope de la hoja: el resto lo scrollea el cuerpo */
     padding: 0;
     border: none;
     border-radius: 0;
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
-    overflow-y: auto;        /* el scroll es de la hoja: cabecera y pie quedan fijos */
-    overscroll-behavior: contain;
+    overflow: hidden;         /* el scroll es del cuerpo, no de la hoja entera */
 }
 
-/* ── Cabecera fija: título + cierre a un toque (el gesto de arrastre vive
-      en la agarradera de gestos.css, por eso se le deja aire arriba) ────── */
+/* ── Cabecera fija de la hoja: título + cierre a un toque (el gesto de
+      arrastre vive en la agarradera de gestos.css) ─────────────────────── */
 .ingesta-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    flex: 0 0 auto;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 22px 16px 12px;
+    gap: var(--sp-12);
+    padding: 18px 16px 10px;
     background: var(--coipo-bg);
-    border-bottom: 1px solid var(--coipo-border);
 }
 
 .ingesta-header h3 {
@@ -246,21 +133,14 @@ body {
     color: var(--coipo-text);
 }
 
-.ingesta-header p {
-    margin: 2px 0 0;
-    font-size: 0.78rem;
-    line-height: 1.35;
-    color: var(--coipo-text-muted);
-}
-
 .ingesta-cerrar {
     flex: 0 0 auto;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: var(--touch-min);
     display: grid;
     place-items: center;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--coipo-surface);
     color: var(--coipo-text-muted);
     font-size: 1.05rem;
@@ -269,131 +149,86 @@ body {
 }
 .ingesta-cerrar:active { background: var(--coipo-accent); color: #fff; }
 
-/* ── Cuerpo: tarjetas de sección apiladas. No scrollea él, scrollea la hoja
-      (así la agarradera y el pie fijo funcionan como en el resto de Coipo) ─ */
+/* (Chips de momento y pestañas: .ingesta-momento/.ingesta-tabs/.ingesta-tab
+   viven ahora en src/styles/components.css) */
+
+/* ── Cuerpo: ÚNICO scrolleable de la hoja. Muestra solo el panel activo ── */
 .ingesta-cuerpo {
-    flex: 1 0 auto;   /* crece si el contenido es corto; nunca se encoge (si no, la hoja cortaría las tarjetas) */
-    padding: 14px 14px 18px;
+    flex: 1 1 auto;
+    min-height: 0;            /* clave: permite el scroll dentro del flex */
+    padding: 0 16px 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
-.ingesta-seccion {
-    background: var(--coipo-card);
-    border: 1px solid var(--coipo-border);
-    border-radius: var(--radius-md);
-    padding: 14px;
-    margin-bottom: 12px;
-}
-.ingesta-seccion:last-child { margin-bottom: 0; }
+.ingesta-panel[hidden] { display: none; }
 
-.ingesta-seccion-titulo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: var(--coipo-text);
+/* Botón de la pestaña Recetas: alto cómodo para el pulgar */
+.ingesta-btn {
+    min-height: var(--touch-md);
+    padding: 12px 16px;
+    font-size: var(--fs-base);
+    margin: 12px 0 0;
 }
-.ingesta-icono { font-size: 1rem; line-height: 1; }
 
-/* Chips de estado: comunican el orden recomendado sin texto de más */
-.ingesta-chip {
-    margin-left: auto;
-    padding: 4px 9px;
-    border-radius: 999px;
-    background: var(--coipo-surface);
-    color: var(--coipo-text);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+/* (Filas .ingesta-receta-fila viven ahora en src/styles/components.css) */
+
+.ingesta-receta-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-base);
+    font-weight: 600;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.ingesta-chip-rapido { background: var(--coipo-tint-success); color: var(--coipo-primary-dark); }
-.ingesta-chip-ia { background: var(--coipo-tint-warning); color: var(--coipo-warning-strong); }
 
-.ingesta-cuerpo .ingesta-seccion-hint {
-    margin: 5px 0 11px;
-    font-size: 0.8rem;
+.ingesta-receta-kcal {
+    font-size: var(--fs-min);
+    color: var(--coipo-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ingesta-vacio {
+    margin: 0;
+    padding: 22px 0;
+    text-align: center;
+    font-size: var(--fs-min);
+    color: var(--coipo-text-muted);
+}
+
+/* ── Pestaña IA: textarea + su ÚNICA acción primaria, a ancho completo ──── */
+.ingesta-ia-titulo {
+    margin: 2px 0 8px;
+    font-size: var(--fs-lg);
+    color: var(--coipo-text);
+}
+
+.ingesta-panel #texto-comida {
+    height: 120px;
+    margin-bottom: 8px;
+}
+
+.ingesta-ia-hint {
+    margin: 0 0 14px;
+    font-size: var(--fs-min);
     line-height: 1.45;
     color: var(--coipo-text-muted);
 }
 
-/* Botón de sección (receta): alto cómodo para el pulgar */
-.ingesta-btn {
-    min-height: 48px;
-    padding: 12px 16px;
-    font-size: 0.95rem;
-    margin: 0;
-}
+/* (El CTA .ingesta-btn-primario vive ahora en src/styles/components.css) */
 
-/* La IA va al FONDO de la hoja: textarea + su CTA en el pie */
-.ingesta-cuerpo #texto-comida {
-    height: 132px;
-    margin-bottom: 0;
-}
-
-/* ── Coincidencias de la búsqueda: lista con scroll PROPIO. Se acota para
-      nunca tapar el resto de la hoja; vacía no ocupa nada. ───────────────── */
-.ingesta-seccion .off-resultados {
-    max-height: min(38vh, 300px);
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-}
-/* Fila de búsqueda (input + ✕ + botón): reglas propias .search-* en dashboard.css */
-
-/* ── Pie fijo: Cancelar a la izquierda, la acción de IA a la derecha
-      (es la ÚLTIMA del recorrido y se queda al alcance del pulgar) ──────── */
-.ingesta-pie {
-    position: sticky;
-    bottom: 0;
-    z-index: 3;
-    display: flex;
-    gap: 10px;
-    padding: 11px 14px calc(11px + env(safe-area-inset-bottom));
-    background: var(--coipo-bg);
-    border-top: 1px solid var(--coipo-border);
-}
-
-.ingesta-pie button {
-    min-height: 50px;
-    border: none;
-    border-radius: var(--radius-md);
-    font-family: var(--font-main);
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: filter 0.2s ease, transform 0.2s ease;
-}
-
-.ingesta-btn-secundario {
-    flex: 1 1 0;
-    background: var(--coipo-surface);
-    color: var(--coipo-text);
-}
-.ingesta-btn-secundario:active { background: var(--coipo-accent); color: #fff; }
-
-.ingesta-btn-primario {
-    flex: 2.2 1 0;
-    padding-inline: 8px;
-    background: var(--coipo-primary);
-    color: #fff;
-    line-height: 1.15;
-}
-.ingesta-btn-primario:hover { filter: brightness(0.93); transform: none; }
-.ingesta-btn-primario:active { filter: brightness(0.88); }
-.ingesta-btn-primario:disabled {
-    background: var(--coipo-text-muted);
-    opacity: 0.55;
-    cursor: not-allowed;
-    transform: none;
-    filter: none;
-}
-
-/* Pantallas angostas (≤360 px): el CTA baja de tamaño de fuente para no
-   partirse en dos renglones feos */
+/* Pantallas angostas (≤360 px): menos aire lateral (el texto nunca baja
+   de 14 px: es el mínimo táctil/legible del proyecto) */
 @media (max-width: 360px) {
-    .ingesta-pie button { font-size: 0.87rem; }
-    .ingesta-seccion { padding: 12px; }
+    .ingesta-cuerpo { padding: 0 12px 16px; }
+    .ingesta-momentos { padding: 2px 12px 10px; }
 }
+
+/* (El pie fijo «Cancelar + Analizar Comida con IA» ya no existe: la hoja es
+   de pestañas y el único botón primario vive dentro de la pestaña IA.) */
 
 /* BOTON DE ELIMINAR INGESTA EN EL CARD VISUAL */
 
@@ -416,7 +251,7 @@ body {
     align-items: center;
     justify-content: center;
     
-    font-size: 1.5rem;
+    font-size: var(--fs-heading);
     line-height: 1;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -517,7 +352,7 @@ input, textarea, select {
     border: 2px solid transparent;
     border-radius: var(--radius-md);
     font-family: var(--font-main);
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     color: var(--coipo-text);
     outline: none;
     transition: all 0.3s ease;
@@ -549,16 +384,16 @@ textarea.receta-campo {
 .receta-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--sp-6);
     margin: 0 0 14px;
 }
 .receta-chip {
     background: var(--coipo-surface);
     color: var(--coipo-text);
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 600;
     padding: 5px 11px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     white-space: nowrap;
 }
 .receta-chip-acento {
@@ -568,7 +403,7 @@ textarea.receta-campo {
 
 /* Títulos de sección */
 .receta-seccion {
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -580,9 +415,9 @@ textarea.receta-campo {
 .receta-desc {
     background: var(--coipo-surface);
     border-left: 3px solid var(--coipo-accent);
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     padding: 10px 13px;
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     line-height: 1.5;
     color: var(--coipo-text);
     white-space: pre-wrap;
@@ -602,7 +437,7 @@ textarea.receta-campo {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-10);
     padding: 10px 0;
     font-size: 0.88rem;
     border-bottom: 1px solid var(--coipo-border);
@@ -632,7 +467,7 @@ textarea.receta-campo {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 10px;
+    gap: var(--sp-10);
 }
 .receta-ing-bloque-nombre {
     font-size: 0.92rem;
@@ -661,7 +496,7 @@ textarea.receta-campo {
     font-weight: 700;
     color: var(--coipo-accent-text);
     background: rgba(190, 168, 146, 0.30);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 1px 7px;
     white-space: nowrap;
 }
@@ -669,14 +504,14 @@ textarea.receta-campo {
 /* Desglose de la porción en el cálculo en vivo (ingrediente × factor) */
 .receta-vivo-ing-lista {
     border: 1px solid var(--coipo-border);
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     margin: 8px 0 2px;
     overflow: hidden;
 }
 .receta-vivo-ing {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
+    gap: var(--sp-8);
     align-items: center;
     padding: 6px 10px;
     font-size: 0.78rem;
@@ -696,7 +531,7 @@ textarea.receta-campo {
 .receta-cards {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sp-10);
     margin-bottom: 6px;
 }
 .receta-card {
@@ -719,7 +554,7 @@ textarea.receta-campo {
 .receta-macro-linea {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--sp-8);
     font-size: 0.88rem;
     padding: 3px 0;
     color: var(--coipo-text);
@@ -735,42 +570,12 @@ textarea.receta-campo {
     color: var(--coipo-warning-strong);
     font-size: 0.82rem;
     line-height: 1.5;
-    border-radius: 10px;
+    border-radius: var(--radius-thumb);
     padding: 9px 13px;
     margin-bottom: 10px;
 }
 
-/* Filas de la lista "Mis Recetas" */
-.receta-fila {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 14px;
-    margin-bottom: 9px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--coipo-surface);
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-}
-.receta-fila:hover {
-    border-color: var(--coipo-primary);
-}
-.receta-fila-info {
-    flex: 1;
-    min-width: 0;
-}
-.receta-fila-info strong {
-    display: block;
-    color: var(--coipo-text);
-    font-size: 0.95rem;
-}
-.receta-fila-info span {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--coipo-text-muted);
-    margin-top: 2px;
-}
+/* (Filas .receta-fila viven ahora en src/styles/components.css) */
 .receta-icon-btn {
     flex-shrink: 0;
     width: 34px;
@@ -779,10 +584,10 @@ textarea.receta-campo {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--coipo-border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--coipo-bg);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     line-height: 1;
     padding: 0;
     transition: all 0.2s ease;
@@ -821,10 +626,10 @@ textarea.receta-campo {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--sp-8);
     padding: 10px 14px;
     cursor: pointer;
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -840,7 +645,7 @@ textarea.receta-campo {
     background: rgba(232, 232, 227, 0.75);
 }
 .receta-acordeon-icono {
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     transition: transform 0.25s ease;
 }
 .receta-acordeon[open] .receta-acordeon-icono { transform: rotate(180deg); }
@@ -866,12 +671,12 @@ textarea.receta-campo {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-8);
     flex-wrap: wrap;
     margin-bottom: 2px;
 }
 .receta-vivo-label {
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -884,7 +689,7 @@ textarea.receta-campo {
     line-height: 1.15;
 }
 .receta-vivo-kcal small {
-    font-size: 0.85rem;
+    font-size: var(--fs-hint);
     font-weight: 600;
     color: var(--coipo-text-muted);
     margin-left: 5px;
@@ -907,7 +712,7 @@ textarea.receta-campo {
 .receta-vivo-desglose {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--sp-10);
     flex-wrap: wrap;
     margin-top: 9px;
     padding-top: 8px;
@@ -919,27 +724,7 @@ textarea.receta-campo {
     color: var(--coipo-text);
 }
 
-/* Botón a todo el ancho fuera de .modal-actions (ej: calcular extras) */
-.btn-block {
-    display: block;
-    width: 100%;
-    padding: 12px 16px;
-    border: none;
-    border-radius: var(--radius-md);
-    font-family: var(--font-main);
-    font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-.btn-block:hover {
-    transform: translateY(-2px);
-}
-.btn-block:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-    transform: none;
-}
+/* (.btn-block vive ahora en src/styles/components.css) */
 
 /* ===== LOADING: spinner inline en botones (IA / DB) ===== */
 .btn-spinner {
@@ -1038,7 +823,7 @@ textarea.receta-campo {
     font-weight: 800;
     color: var(--coipo-primary, #81B29A);
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: var(--radius-xs);
     letter-spacing: 0.2px;
 }
 .toast-accion:active { opacity: 0.7; }
@@ -1077,8 +862,8 @@ textarea.receta-campo {
     .toast-notification {
         bottom: 106px;
         padding: 11px 14px;
-        font-size: 0.85rem;
-        gap: 10px;
+        font-size: var(--fs-hint);
+        gap: var(--sp-10);
     }
     .toast-progress { height: 3px; }
 }
@@ -1087,7 +872,7 @@ textarea.receta-campo {
 .skeleton-fila {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-8);
     padding: 14px 12px;
     border-bottom: 1px solid var(--coipo-border);
 }

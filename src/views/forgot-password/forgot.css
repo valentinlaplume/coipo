@@ -3,7 +3,7 @@
 
 .success-message {
     background-color: var(--coipo-surface);
-    padding: 24px;
+    padding: var(--sp-24);
     border-radius: var(--radius-md);
     text-align: center;
     color: var(--coipo-text);

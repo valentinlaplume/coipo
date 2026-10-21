@@ -25,24 +25,24 @@
 
 .login-subtitle {
     color: var(--coipo-text-muted);
-    font-size: 1.1rem;
+    font-size: var(--fs-title);
     font-weight: 500;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--sp-20);
 }
 
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-8);
 }
 
 .input-group label {
-    font-size: 0.9rem;
+    font-size: var(--fs-body);
     font-weight: 700;
     color: var(--coipo-text);
     padding-left: 4px;
@@ -53,9 +53,9 @@
     /* Usamos el color de superficie para que se note sobre el fondo crema */
     background-color: var(--coipo-surface); 
     border: 2px solid var(--coipo-surface); /* Borde del mismo color para dar grosor */
-    padding: 16px;
+    padding: var(--sp-16);
     border-radius: var(--radius-md); 
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     color: var(--coipo-text);
     outline: none;
     transition: all 0.3s ease;
@@ -67,24 +67,7 @@
     box-shadow: 0 4px 12px rgba(141, 160, 129, 0.1);
 }
 
-/* BOTÓN PRIMARIO */
-.btn-primary {
-    background-color: var(--coipo-primary);
-    color: white;
-    border: none;
-    padding: 18px;
-    border-radius: var(--radius-md);
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 10px;
-    box-shadow: 0 4px 10px rgba(141, 160, 129, 0.3);
-    transition: all 0.2s ease;
-}
-
-.btn-primary:active {
-    transform: scale(0.97);
-}
+/* (.btn-primary vive ahora en src/styles/components.css) */
 
 .login-divider {
     display: flex;
@@ -111,13 +94,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: var(--sp-12);
     background-color: var(--coipo-surface); /* Mismo gris que los inputs */
     color: var(--coipo-text);
     border: none;
-    padding: 16px;
+    padding: var(--sp-16);
     border-radius: var(--radius-md);
-    font-size: 1rem;
+    font-size: var(--fs-lg);
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -135,7 +118,7 @@
 .login-footer {
     margin-top: 40px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
     color: var(--coipo-text-muted);
 }
 

@@ -1,0 +1,515 @@
+/* src/styles/components.css ═══════════════════════════════════════════════════
+   COMPONENTES COMPARTIDOS DE COIPO — una sola casa para los patrones que se
+   repiten en varias pantallas. Se carga DESPUÉS de tokens.css y ANTES de
+   main.css y de las vistas, así toda vista puede sobrescribir lo que necesite.
+
+   Contenido (por familia):
+   1. Botones    .btn-primary · .btn-secondary · .btn-danger · .btn-block
+                 (+ la variante de hoja .ingesta-btn-primario)
+   2. Modal      .modal-overlay · .modal-content · .modal-actions (+compact)
+   3. Chips      .pill (onboarding/perfil/sugerencias) · .ingesta-momento
+   4. Pestañas   .ingesta-tabs / .ingesta-tab (segmented control)
+   5. Filas      .receta-fila · .ingesta-receta-fila · .off-fila (resultados)
+   6. Buscador   .search-row / .search-field / .search-input / .search-clear
+                 / .search-btn (input con botón a la derecha)
+
+   ⚠️ ORDEN DENTRO DEL ARCHIVO = cascada histórica. Ejemplo: .btn-block va
+   ANTES de .btn-primary porque, en la app real, el look de login (.btn-primary
+   en login.css) ganaba a .btn-block (main.css); .ingesta-btn-primario va
+   DESPUÉS y trae font-size/transition ya resueltos para no depender del orden.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. BOTONES ───────────────────────────────────────────────────────────── */
+
+/* Botón Cancelar (Marrón Tierra o Gris) */
+.btn-secondary {
+    background-color: var(--coipo-surface);
+    color: var(--coipo-text);
+}
+
+.btn-secondary:hover {
+    background-color: var(--coipo-accent);
+    color: white;
+}
+
+/* Variación para el botón de eliminar */
+.btn-danger {
+    background-color: var(--coipo-error);
+    color: white;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+}
+
+/* Botón a todo el ancho fuera de .modal-actions (ej: calcular extras) */
+.btn-block {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: var(--fs-base);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.btn-block:hover {
+    transform: translateY(-2px);
+}
+.btn-block:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Look canónico del botón verde (fusión de las tres definiciones que
+   convivían: main.css + login.css + onboarding.css; ganaba login.css) */
+.btn-primary {
+    width: 100%;             /* de la copia de onboarding */
+    flex-shrink: 0;
+    background-color: var(--coipo-primary);
+    color: white;
+    border: none;
+    padding: var(--sp-18);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-title);
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 4px 10px rgba(141, 160, 129, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+    background-color: var(--coipo-primary-dark);   /* de la copia de onboarding */
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+    background-color: var(--coipo-text-muted);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* CTA de la pestaña IA: mismo look canónico + layout propio de la hoja */
+.ingesta-btn-primario {
+    display: block;
+    width: 100%;
+    min-height: 50px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--coipo-primary);
+    color: #fff;
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: var(--fs-title);                /* resuelto: hoy lo imponía .btn-primary */
+    cursor: pointer;
+    transition: all 0.2s ease;        /* resuelto: hoy lo imponía .btn-primary */
+}
+.ingesta-btn-primario:hover { filter: brightness(0.93); transform: none; }
+.ingesta-btn-primario:active { filter: brightness(0.88); }
+.ingesta-btn-primario:disabled {
+    background: var(--coipo-text-muted);
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+}
+
+/* ── 2. MODAL ─────────────────────────────────────────────────────────────── */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--coipo-overlay); /* fondo de modal, adaptado por tema */
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: var(--sp-20);
+}
+
+.modal-content {
+    background-color: var(--coipo-bg);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--coipo-surface);
+}
+
+/* Celular promedio (≤480px): menos padding → más ancho útil para el contenido */
+@media (max-width: 480px) {
+    .modal-overlay { padding: var(--sp-12); }
+    .modal-content { padding: 1.25rem 1.15rem; }
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: var(--coipo-text);
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.modal-content p {
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-base);
+    margin-bottom: 1.5rem;
+}
+
+/* Contenedor de botones */
+.modal-actions {
+    display: flex;
+    gap: var(--sp-12);
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* Estilo Base de Botones en Modal */
+.modal-actions button {
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: var(--fs-lg);
+    font-family: var(--font-main);
+    flex: 1; /* Ambos miden lo mismo */
+    transition: all 0.3s ease;
+}
+
+/* Fila con 4 botones (detalle de receta: Editar/Usar/Eliminar/Cerrar) */
+.modal-actions-compact button {
+    padding: 12px 6px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+/* ── 3. CHIPS ─────────────────────────────────────────────────────────────── */
+
+/* Píldoras de opción (onboarding, perfil, sugerencias) */
+.pill-group { display: flex; gap: var(--sp-12); }
+
+.pill, .option-card, .food-pill {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.pill {
+    flex: 1; padding: var(--sp-14);
+    border-radius: var(--radius-md);
+    background: var(--coipo-surface);
+    font-weight: 600;
+}
+
+.pill.active, .option-card.active, .food-pill.active {
+    background: var(--coipo-card);
+    border-color: var(--coipo-primary);
+    box-shadow: 0 10px 20px rgba(141, 160, 129, 0.15);
+    color: var(--coipo-primary);
+}
+
+/* Chips de momento del día: fijos (no scrollean con el contenido) y con
+   scroll horizontal propio si no entran en pantallas angostas */
+.ingesta-momentos {
+    flex: 0 0 auto;
+    display: flex;
+    gap: var(--sp-8);
+    padding: 2px 16px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.ingesta-momentos::-webkit-scrollbar { display: none; }
+
+.ingesta-momento {
+    flex: 0 0 auto;
+    min-height: var(--touch-min);
+    padding: 0 14px;
+    border: 1px solid var(--coipo-border);
+    border-radius: var(--radius-pill);
+    background: var(--coipo-bg);
+    color: var(--coipo-text-muted);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.ingesta-momento.active {
+    background: var(--coipo-surface);
+    border-color: var(--coipo-accent);
+    color: var(--coipo-text);
+    font-weight: 700;
+}
+.ingesta-momento:active { transform: scale(0.97); }
+
+/* ── 4. PESTAÑAS (segmented control) ────────────────────────────────────────
+   Fijas, una sola activa a la vez. La activa se distingue con fondo + borde
+   inferior de color; las inactivas quedan en gris. */
+.ingesta-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    gap: var(--sp-4);
+    margin: 0 16px 12px;
+    padding: var(--sp-4);
+    background: var(--coipo-surface);
+    border-radius: var(--radius-md);
+}
+
+.ingesta-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: var(--touch-min);
+    padding: 0 6px;
+    border: none;
+    border-bottom: 2px solid transparent;   /* evita el salto al activarse */
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--coipo-text-muted);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.ingesta-tab.active {
+    background: var(--coipo-bg);
+    color: var(--coipo-text);
+    border-bottom-color: var(--coipo-accent);
+}
+
+/* Pantallas angostas (≤360 px): menos aire lateral (el texto nunca baja
+   de 14 px: es el mínimo táctil/legible del proyecto) */
+@media (max-width: 360px) {
+    .ingesta-tabs { margin: 0 12px 10px; }
+    .ingesta-tab { padding: 0 4px; }
+}
+
+/* ── 5. FILAS DE LISTA ────────────────────────────────────────────────────── */
+
+/* Filas de la lista "Mis Recetas" */
+.receta-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: 12px 14px;
+    margin-bottom: 9px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--coipo-surface);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+.receta-fila:hover {
+    border-color: var(--coipo-primary);
+}
+.receta-fila-info {
+    flex: 1;
+    min-width: 0;
+}
+.receta-fila-info strong {
+    display: block;
+    color: var(--coipo-text);
+    font-size: var(--fs-base);
+}
+.receta-fila-info span {
+    display: block;
+    font-size: var(--fs-caption);
+    color: var(--coipo-text-muted);
+    margin-top: 2px;
+}
+
+/* Filas de Mis Recetas dentro de la pestaña Recetas de Nueva Ingesta */
+.ingesta-receta-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-10);
+    width: 100%;
+    min-height: var(--touch-fila);
+    padding: 10px 8px;
+    border: none;
+    background: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--coipo-text);
+}
+.ingesta-receta-fila:active { background: var(--coipo-surface); }
+
+/* Filas de resultados de búsqueda (Tus productos + Open Food Facts):
+   toda la fila es tocable, miniatura de 40 px, nombre con ellipsis,
+   marca debajo, kcal a la derecha y chevron de navegación */
+.off-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-10);
+    width: 100%;
+    min-height: var(--touch-fila);         /* target táctil cómodo: toda la fila es tocable */
+    padding: var(--sp-8);
+    border: none;
+    background: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--coipo-text);
+}
+.off-fila:active { background: var(--coipo-surface); }
+
+.off-fila img {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-thumb);
+    object-fit: cover;
+    background: var(--coipo-surface);
+    flex-shrink: 0;
+}
+
+/* Miniatura sin foto: ícono de comida sobre el mismo espacio de 40 px */
+.off-fila-icono {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-thumb);
+    background: var(--coipo-surface);
+    font-size: 1.05rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* Chevron › a la derecha del kcal: la fila entera navega a la porción */
+.off-fila-chevron {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--coipo-text-muted);
+}
+
+.off-fila-texto { flex: 1; min-width: 0; }
+
+.off-fila-nombre {
+    display: block;          /* así el recorte con … funciona (en inline no) */
+    font-size: var(--fs-body);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.off-fila-marca {
+    display: block;
+    font-size: var(--fs-min);
+    color: var(--coipo-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.off-fila-kcal {
+    font-size: var(--fs-min);
+    font-weight: 700;
+    color: var(--coipo-accent-text);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Tema oscuro */
+[data-tema='oscuro'] .off-fila:active { background: #23262C; }
+
+/* ── 6. BUSCADOR: INPUT CON BOTÓN ───────────────────────────────────────────
+   Clases PROPIAS (.search-*): el input crece con todo lo que sobra, la ✕ va
+   apilada encima (no le come ancho) y el botón tiene ancho propio. */
+
+.search-row {
+    display: flex;
+    gap: var(--sp-8);
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Columna del input: crece con todo lo que sobra y deja sitio a la ✕,
+   que va APILADA encima (no le come ancho al input) */
+.search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.search-input {
+    width: 100%;
+    height: var(--touch-min);
+    box-sizing: border-box;
+    padding: 0 40px 0 12px;          /* 40px a la derecha: aire para la ✕ */
+    font-size: var(--fs-lg);
+    border: 1px solid var(--coipo-surface);
+    border-radius: var(--radius-md);
+    background: var(--coipo-bg);
+    color: var(--coipo-text);
+}
+.search-input:focus { outline: 2px solid var(--coipo-accent); outline-offset: 1px; }
+
+/* El ✕ nativo del input[type=search] duplicaría el nuestro */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+/* ✕ de limpiar: DENTRO del input, a la derecha, sin achicarlo */
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--coipo-surface);
+    color: var(--coipo-text-muted);
+    font-size: var(--fs-hint);
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1;
+}
+.search-clear:active { background: var(--coipo-accent); color: #fff; }
+
+/* Oculta mientras el HTML la traiga marcada (estado inicial: sin texto)… */
+.search-clear[hidden] { display: none; }
+/* …y se muestra sola en cuanto el input tiene texto, con puro CSS */
+.search-field .search-input:not(:placeholder-shown) ~ .search-clear { display: grid; }
+
+/* Botón «Buscar»: ancho propio, no se comprime ni crece */
+.search-btn {
+    flex: 0 0 auto;
+    height: var(--touch-min);
+    padding: 0 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--coipo-primary);
+    color: #fff;
+    font-family: var(--font-main);
+    font-size: var(--fs-base);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.search-btn:active { filter: brightness(0.92); }
