@@ -18,6 +18,8 @@ html[data-tema="oscuro"] {
 
     /* Marcas Coipo — un poco más vivas para contraste sobre oscuro */
     --coipo-primary: #88A37C;
+    --coipo-primary-light: #56684E;
+    --coipo-primary-rgb: 136, 163, 124;
     --coipo-primary-dark: #B9D19B;
     --coipo-accent: #C7AE97;
 

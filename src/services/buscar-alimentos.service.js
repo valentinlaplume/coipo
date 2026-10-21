@@ -141,24 +141,34 @@ export const buscarAlimentos = async (texto) => {
  * `fuente` distingue los productos del usuario ('propio' → base propia) de
  * los de Open Food Facts.
  */
+// null = sin dato. Nunca convertir "no hay dato" en 0: los totales y la UI
+// distinguen desconocido (—) de consumo cero.
+const numeroONull = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+};
+
 export const productoDesdeResultado = (r) => ({
     barcode: r.codigo || null,
     nombre: r.nombre,
     marca: r.marca || null,
     imagen_url: r.imagen || null,
+    porcion_g: numeroONull(r.porcion_g),
     por_100g: {
         calorias: Number(r.kcal100) || 0,
         proteinas: Number(r.p100) || 0,
         carbohidratos: Number(r.c100) || 0,
         grasas: Number(r.g100) || 0,
-        fibra: 0,
-        sodio_mg: 0,
-        potasio_mg: 0,
-        magnesio_mg: 0,
-        calcio_mg: 0,
-        hierro_mg: 0,
-        zinc_mg: 0,
-        omega3: { ala_mg: 0, epa_dha_mg: 0 }
+        fibra: numeroONull(r.fibra100),
+        sodio_mg: numeroONull(r.sodio100_mg),
+        azucares_g: numeroONull(r.azucares100),
+        potasio_mg: null,
+        magnesio_mg: null,
+        calcio_mg: null,
+        hierro_mg: null,
+        zinc_mg: null,
+        omega3: null
     },
     fuente: r.fuente === 'propio' ? 'base_propia' : 'openfoodfacts'
 });

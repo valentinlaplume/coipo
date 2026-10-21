@@ -42,7 +42,10 @@ const idProducto = (nombre, marca) => {
     return base || `p-${Date.now()}`;
 };
 
+// null/undefined/'' → null (sin dato). Number(null) daría 0: no queremos
+// convertir "no hay dato" en consumo cero.
 const numero = (v) => {
+    if (v === null || v === undefined || v === '') return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
 };
@@ -81,6 +84,10 @@ const aResultado = (d) => {
         p100: numero(por100.proteinas) ?? 0,
         c100: numero(por100.carbohidratos) ?? 0,
         g100: numero(por100.grasas) ?? 0,
+        // Micros: null = sin dato (se muestran como "—")
+        fibra100: numero(por100.fibra),
+        sodio100_mg: numero(por100.sodio_mg),
+        azucares100: numero(por100.azucares_g),
         porcion_g: numero(d.porcion_g),
         fuente: 'propio'
     };
@@ -142,7 +149,10 @@ export const guardarProductoUsuario = async (uid, producto) => {
                 calorias: kcal,
                 proteinas: numero(producto.por_100g.proteinas) ?? 0,
                 carbohidratos: numero(producto.por_100g.carbohidratos) ?? 0,
-                grasas: numero(producto.por_100g.grasas) ?? 0
+                grasas: numero(producto.por_100g.grasas) ?? 0,
+                fibra: numero(producto.por_100g.fibra),
+                sodio_mg: numero(producto.por_100g.sodio_mg),
+                azucares_g: numero(producto.por_100g.azucares_g)
             },
             origen: producto.origen === 'manual' ? 'manual' : 'ia',
             veces_usado: increment(1),
@@ -181,7 +191,8 @@ export const guardarItemsComoProductos = async (uid, items) => {
                 calorias: (Number(item.calorias) || 0) * f,
                 proteinas: (Number(item.proteinas) || 0) * f,
                 carbohidratos: (Number(item.carbohidratos) || 0) * f,
-                grasas: (Number(item.grasas) || 0) * f
+                grasas: (Number(item.grasas) || 0) * f,
+                fibra: item.fibra == null ? null : (Number(item.fibra) || 0) * f
             }
         });
     }

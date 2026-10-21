@@ -139,6 +139,13 @@ const construirURL = (mirror, texto, conArgentina) =>
 // ── Normalización de resultados ─────────────────────────────────────────────
 const numero = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
 
+// OFF guarda el sodio en gramos por 100 g; la app trabaja en mg.
+// Sin dato → null (la UI lo muestra como "—", nunca como consumo 0).
+const sodioMg = (v) => {
+    const gramos = numero(v);
+    return gramos === null ? null : Math.round(gramos * 1000 * 10) / 10;
+};
+
 // "30 g" / "100 ml" / "30g" → 30 (la app trabaja en gramos)
 const gramosDeServingSize = (texto) => {
     if (typeof texto !== 'string') return null;
@@ -208,6 +215,10 @@ const normalizarResultados = (productos) => {
             p100: numero(n['proteins_100g']) ?? 0,
             c100: numero(n['carbohydrates_100g']) ?? 0,
             g100: numero(n['fat_100g']) ?? 0,
+            // Micros que OFF sí suele traer: null = sin dato (nunca 0)
+            fibra100: numero(n['fiber_100g']),
+            sodio100_mg: sodioMg(n['sodium_100g']),
+            azucares100: numero(n['sugars_100g']),
             porcion_g: porcionDe(p),
             fuente: 'openfoodfacts' // la app usa esto para el crédito en la UI
         });

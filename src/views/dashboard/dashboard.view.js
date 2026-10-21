@@ -158,8 +158,11 @@ export const textoError = (error, fallback) => {
 
 // Modal propio para pedir gramos (nunca prompt() del navegador)
 // valorInicial: p. ej. la porción de la etiqueta del producto (OFF la trae).
-export const pedirGramos = (titulo, valorInicial = 100) => new Promise(resolve => {
+// porcionG: si existe, se ofrece el chip "1 porción (X g)" (si no, 100 g).
+export const pedirGramos = (titulo, valorInicial = 100, porcionG = null) => new Promise(resolve => {
     const valor = Number(valorInicial) > 0 ? Number(valorInicial) : 100;
+    const porcion = Number(porcionG) > 0 ? Number(porcionG) : null;
+    const porcionTexto = porcion ? String(Math.round(porcion * 10) / 10) : '';
     document.querySelectorAll('.toast-notification').forEach(t => t.remove()); // nada tapa el modal
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -168,6 +171,7 @@ export const pedirGramos = (titulo, valorInicial = 100) => new Promise(resolve =
         <div class="modal-content" style="width: 88%; max-width: 340px;">
             <h3 style="margin: 0 0 2px; font-size: 1.05rem;">¿Cuántos gramos comiste?</h3>
             <p style="margin: 0 0 12px; font-size: 0.82rem; color: var(--coipo-text-muted);">${esc(titulo)}</p>
+            ${porcion ? `<button type="button" class="porcion-chip${valor === porcion ? ' active' : ''}" id="pedir-gramos-porcion">1 porción (${esc(porcionTexto)} g)</button>` : ''}
             <input type="number" id="pedir-gramos-input" inputmode="decimal" min="1" step="1" value="${esc(String(valor))}"
                 style="width: 100%; box-sizing: border-box; padding: 12px; font-size: 1.25rem; text-align: center;
                        font-weight: 700; border: 1px solid var(--coipo-surface); border-radius: 12px;
@@ -181,6 +185,21 @@ export const pedirGramos = (titulo, valorInicial = 100) => new Promise(resolve =
 
     const input = overlay.querySelector('#pedir-gramos-input');
     setTimeout(() => { input.focus(); input.select(); }, 120);
+
+    // Chip "1 porción (X g)": completa el input con la porción de OFF.
+    const chipPorcion = overlay.querySelector('#pedir-gramos-porcion');
+    if (chipPorcion) {
+        chipPorcion.onclick = () => {
+            input.value = porcionTexto;
+            chipPorcion.classList.add('active');
+            input.focus();
+            input.select();
+        };
+        input.addEventListener('input', () => {
+            const actual = parseFloat(String(input.value).replace(',', '.'));
+            chipPorcion.classList.toggle('active', actual === porcion);
+        });
+    }
 
     const cerrar = (valor) => { overlay.remove(); resolve(valor); };
     overlay.querySelector('#pedir-gramos-ok').onclick = () => {
@@ -360,6 +379,37 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
     const { resumen, ingestas } = cacheSemanal[dateKey];
     console.log(ingestas.sort((a, b) => (a.creado_el?.seconds || 0) - (b.creado_el?.seconds || 0)))
     contadorAguaLocal = resumen.vasos_agua || 0;
+
+    // ── DATOS CONOCIDOS vs. DESCONOCIDOS ──────────────────────────────────
+    // Los productos de OFF pueden venir sin fibra/sodio/micros: se guardan
+    // como null ("sin dato"), no como 0. La UI muestra "—" y los totales no
+    // suman 0 por un valor desconocido.
+    // Día sin comidas: el consumo 0 es un dato conocido (no "sin datos").
+    // Se recalcula al borrar (optimista) y en el render inicial.
+    const calcularDatosConocidos = () => {
+        const hayMicro = (campoTotal, campoItem) => ingestas.length === 0 || ingestas.some(i =>
+            typeof (i.resumen_micros || {})[campoTotal] === 'number' ||
+            (i.alimentos || []).some(a => typeof (a || {})[campoItem] === 'number'));
+        return {
+            fibra: ingestas.length === 0 ||
+                ingestas.some(i => typeof (i.resumen_macros || {}).total_fibra === 'number'),
+            micros: {
+                sodio: hayMicro('total_sodio_mg', 'sodio_mg'),
+                potasio: hayMicro('total_potasio_mg', 'potasio_mg'),
+                magnesio: hayMicro('total_magnesio_mg', 'magnesio_mg'),
+                calcio: hayMicro('total_calcio_mg', 'calcio_mg'),
+                hierro: hayMicro('total_hierro_mg', 'hierro_mg'),
+                vitaminaD: hayMicro('total_vitamina_d_ui', 'vitamina_d_ui'),
+                omega3: ingestas.length === 0 || ingestas.some(i =>
+                    typeof i.resumen_micros?.total_omega3?.ala_mg === 'number' ||
+                    (i.alimentos || []).some(a => typeof a.omega3?.ala_mg === 'number'))
+            }
+        };
+    };
+    const { fibra: hayDatosFibra, micros: microsConDatos } = calcularDatosConocidos();
+    // "—" cuando no hay dato; el valor formateado si lo hay.
+    const valorConDatos = (valor, hayDato, decimales = 0, sufijo = '') =>
+        hayDato ? `${(Number(valor) || 0).toFixed(decimales)}${sufijo}` : '—';
     const plan = userData.plan_nutricional || calcularPlanNutricional(userData);
     console.log(resumen)
     console.log(plan)
@@ -389,6 +439,9 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
     };
 
     const actualizarResumenDOM = () => {
+        // Al borrar una ingesta, "conocido" puede cambiar (p. ej. queda solo
+        // un producto sin fibra): recalcular antes de pintar.
+        const conocidos = calcularDatosConocidos();
         const kcal = Number(resumen.acumulado_calorias) || 0;
         const vKcal = container.querySelector('.main-kcal .value');
         if (vKcal) vKcal.textContent = Math.round(plan.kcal - kcal);
@@ -406,35 +459,36 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         ].forEach(([kAcum, kMeta], i) => {
             const card = container.querySelectorAll('.macros-grid .macro-card')[i];
             if (!card) return;
+            const conocido = kAcum !== 'acumulado_fibra' || conocidos.fibra;
             const acum = Number(resumen[kAcum]) || 0;
             const meta = Number(plan[kMeta]) || 1;
             const pct = Math.round((acum / meta) * 100);
             const vals = card.querySelector('.macro-values');
-            if (vals) vals.textContent = `${acum.toFixed(0)} / ${meta}g`;
+            if (vals) vals.textContent = `${conocido ? acum.toFixed(0) : '—'} / ${meta}g`;
             const fill = card.querySelector('.progress-fill');
-            if (fill) fill.style.width = `${Math.min(pct, 100)}%`;
+            if (fill) fill.style.width = conocido ? `${Math.min(pct, 100)}%` : '0%';
             const pctEl = card.querySelector('.progress-percent');
-            if (pctEl) pctEl.textContent = `${pct}%`;
+            if (pctEl) pctEl.textContent = conocido ? `${pct}%` : '—';
         });
 
         // Micros — orden del template: sodio, potasio, magnesio, calcio, hierro, vit D, omega-3
         [
-            ['acumulado_sodio_mg', 'sodio', 0, 'mg'],
-            ['acumulado_potasio_mg', 'potasio', 0, ' mg'],
-            ['acumulado_magnesio_mg', 'magnesio', 0, ' mg'],
-            ['acumulado_calcio_mg', 'calcio', 0, ' mg'],
-            ['acumulado_hierro_mg', 'hierro', 1, ' mg'],
-            ['acumulado_vitamina_d_ui', 'vitaminaD', 0, ' UI'],
-            ['acumulado_omega3_ala_mg', 'omega3_ala', 0, 'mg']
-        ].forEach(([kAcum, kMeta, dec, sufijo], i) => {
+            ['acumulado_sodio_mg', 'sodio', 0, 'mg', conocidos.micros.sodio],
+            ['acumulado_potasio_mg', 'potasio', 0, ' mg', conocidos.micros.potasio],
+            ['acumulado_magnesio_mg', 'magnesio', 0, ' mg', conocidos.micros.magnesio],
+            ['acumulado_calcio_mg', 'calcio', 0, ' mg', conocidos.micros.calcio],
+            ['acumulado_hierro_mg', 'hierro', 1, ' mg', conocidos.micros.hierro],
+            ['acumulado_vitamina_d_ui', 'vitaminaD', 0, ' UI', conocidos.micros.vitaminaD],
+            ['acumulado_omega3_ala_mg', 'omega3_ala', 0, 'mg', conocidos.micros.omega3]
+        ].forEach(([kAcum, kMeta, dec, sufijo, conocido], i) => {
             const stat = container.querySelectorAll('.micros-grid .micro-stat')[i];
             if (!stat) return;
             const acum = Number(resumen[kAcum]) || 0;
             const meta = Number(plan[kMeta]) || 1;
             const vals = stat.querySelector('.micro-value');
-            if (vals) vals.textContent = `${acum.toFixed(dec)} / ${meta}${sufijo}`;
+            if (vals) vals.textContent = `${conocido ? acum.toFixed(dec) : '—'} / ${meta}${sufijo}`;
             const fill = stat.querySelector('.micro-fill');
-            if (fill) fill.style.width = `${Math.min((acum / meta) * 100, 100)}%`;
+            if (fill) fill.style.width = conocido ? `${Math.min((acum / meta) * 100, 100)}%` : '0%';
         });
     };
 
@@ -517,12 +571,12 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                         <div class="macro-card">
                             <div class="macro-header">
                                 <span class="macro-name">Fibra</span>
-                                <span class="macro-values">${(resumen.acumulado_fibra || 0).toFixed(0)} / ${plan.fibra}g</span>
+                                <span class="macro-values">${valorConDatos(resumen.acumulado_fibra, hayDatosFibra)} / ${plan.fibra}g</span>
                             </div>
                             <div class="progress-bar-container">
-                                <div class="progress-fill fiber" style="width: ${Math.min((resumen.acumulado_fibra / plan.fibra) * 100, 100)}%"></div>
+                                <div class="progress-fill fiber" style="width: ${hayDatosFibra ? Math.min(((Number(resumen.acumulado_fibra) || 0) / plan.fibra) * 100, 100) : 0}%"></div>
                             </div>
-                            <div class="progress-percent">${Math.round((resumen.acumulado_fibra / plan.fibra) * 100)}%</div>
+                            <div class="progress-percent">${hayDatosFibra ? `${Math.round(((Number(resumen.acumulado_fibra) || 0) / plan.fibra) * 100)}%` : '—'}</div>
                         </div>
                     </div>
                 </section>
@@ -541,10 +595,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Sodio</span>
-                                    <span class="micro-value">${(resumen.acumulado_sodio_mg || 0).toFixed(0)} / ${plan.sodio}mg</span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_sodio_mg, microsConDatos.sodio)} / ${plan.sodio}mg</span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill warning" style="width: ${Math.min((resumen.acumulado_sodio_mg / plan.sodio) * 100, 100)}%"></div>
+                                    <div class="micro-fill warning" style="width: ${microsConDatos.sodio ? Math.min(((Number(resumen.acumulado_sodio_mg) || 0) / plan.sodio) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -552,10 +606,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Potasio</span>
-                                    <span class="micro-value">${(resumen.acumulado_potasio_mg || 0).toFixed(0)} / ${plan.potasio} mg</span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_potasio_mg, microsConDatos.potasio)} / ${plan.potasio} mg</span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill" style="width: ${Math.min((resumen.acumulado_potasio_mg / plan.potasio) * 100, 100)}%"></div>
+                                    <div class="micro-fill" style="width: ${microsConDatos.potasio ? Math.min(((Number(resumen.acumulado_potasio_mg) || 0) / plan.potasio) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -563,10 +617,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Magnesio</span>
-                                    <span class="micro-value">${(resumen.acumulado_magnesio_mg || 0).toFixed(0)} / ${plan.magnesio} mg</span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_magnesio_mg, microsConDatos.magnesio)} / ${plan.magnesio} mg</span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill" style="width: ${Math.min((resumen.acumulado_magnesio_mg / plan.magnesio) * 100, 100)}%"></div>
+                                    <div class="micro-fill" style="width: ${microsConDatos.magnesio ? Math.min(((Number(resumen.acumulado_magnesio_mg) || 0) / plan.magnesio) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -574,10 +628,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Calcio</span>
-                                    <span class="micro-value">${(resumen.acumulado_calcio_mg || 0).toFixed(0)} / ${plan.calcio} mg</span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_calcio_mg, microsConDatos.calcio)} / ${plan.calcio} mg</span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill" style="width: ${Math.min((resumen.acumulado_calcio_mg / plan.calcio) * 100, 100)}%"></div>
+                                    <div class="micro-fill" style="width: ${microsConDatos.calcio ? Math.min(((Number(resumen.acumulado_calcio_mg) || 0) / plan.calcio) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -585,10 +639,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Hierro</span>
-                                    <span class="micro-value">${(resumen.acumulado_hierro_mg || 0).toFixed(1)} / ${plan.hierro} mg </span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_hierro_mg, microsConDatos.hierro, 1)} / ${plan.hierro} mg </span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill" style="width: ${Math.min((resumen.acumulado_hierro_mg / plan.hierro) * 100, 100)}%"></div>
+                                    <div class="micro-fill" style="width: ${microsConDatos.hierro ? Math.min(((Number(resumen.acumulado_hierro_mg) || 0) / plan.hierro) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -596,10 +650,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Vit. D</span>
-                                    <span class="micro-value">${(resumen.acumulado_vitamina_d_ui || 0).toFixed(0)} / ${plan.vitaminaD} UI </span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_vitamina_d_ui, microsConDatos.vitaminaD)} / ${plan.vitaminaD} UI </span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill" style="width: ${Math.min((resumen.acumulado_vitamina_d_ui / plan.vitaminaD) * 100, 100)}%"></div>
+                                    <div class="micro-fill" style="width: ${microsConDatos.vitaminaD ? Math.min(((Number(resumen.acumulado_vitamina_d_ui) || 0) / plan.vitaminaD) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -607,10 +661,10 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             <div class="micro-stat full-width">
                                 <div class="micro-header-info">
                                     <span class="micro-label">Omega-3 (ALA)</span>
-                                    <span class="micro-value">${(resumen.acumulado_omega3_ala_mg || 0).toFixed(0)} / ${plan.omega3_ala || 1600}mg</span>
+                                    <span class="micro-value">${valorConDatos(resumen.acumulado_omega3_ala_mg, microsConDatos.omega3)} / ${plan.omega3_ala || 1600}mg</span>
                                 </div>
                                 <div class="micro-progress-bg">
-                                    <div class="micro-fill omega" style="width: ${Math.min((resumen.acumulado_omega3_ala_mg / (plan.omega3_ala || 1600)) * 100, 100)}%"></div>
+                                    <div class="micro-fill omega" style="width: ${microsConDatos.omega3 ? Math.min(((Number(resumen.acumulado_omega3_ala_mg) || 0) / (plan.omega3_ala || 1600)) * 100, 100) : 0}%"></div>
                                 </div>
                             </div>
 
@@ -660,7 +714,8 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                             const prot = Number(macros.total_proteinas || 0).toFixed(1);
                             const carb = Number(macros.total_carbohidratos || 0).toFixed(1);
                             const gras = Number(macros.total_grasas || 0).toFixed(1);
-                            const fibr = Number(macros.total_fibra || 0).toFixed(1);
+                            // null = sin dato en este producto (nunca 0)
+                            const fibr = macros.total_fibra == null ? null : Number(macros.total_fibra);
 
                             const microItems = microsListos ? [
                                 m.total_hierro_mg ? { label: 'Fe', val: `${m.total_hierro_mg.toFixed(1)}mg` } : null,
@@ -694,7 +749,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                                     <div class="macro-pill prot"><span class="pill-label">Proteína</span><span class="pill-val">${prot}g</span></div>
                                     <div class="macro-pill carb"><span class="pill-label">Carbos</span><span class="pill-val">${carb}g</span></div>
                                     <div class="macro-pill fat"><span class="pill-label">Grasas</span><span class="pill-val">${gras}g</span></div>
-                                    <div class="macro-pill fiber"><span class="pill-label">Fibra</span><span class="pill-val">${fibr}g</span></div>
+                                    <div class="macro-pill fiber"><span class="pill-label">Fibra</span><span class="pill-val">${fibr === null ? '—' : `${fibr.toFixed(1)}g`}</span></div>
                                 </div>
 
                                 ${microsListos && microItems.length > 0 ? `
@@ -737,7 +792,7 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                                                     <span class="mi-prot">P ${Number(item.proteinas || 0).toFixed(1)}g</span>
                                                     <span class="mi-carb">C ${Number(item.carbohidratos || 0).toFixed(1)}g</span>
                                                     <span class="mi-fat">G ${Number(item.grasas || 0).toFixed(1)}g</span>
-                                                    <span class="mi-fib">F ${Number(item.fibra || 0).toFixed(1)}g</span>
+                                                    <span class="mi-fib">F ${item.fibra == null ? '—' : `${Number(item.fibra).toFixed(1)}g`}</span>
                                                 </div>
                                             </div>
                                         `).join('')}
@@ -794,9 +849,6 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 <button class="nav-item nav-add" id="nav-registrar">
                     <span class="nav-add-circle">+</span>
                     <span class="nav-add-label">Registrar</span>
-                </button>
-                <button class="nav-item">
-                    <span class="nav-icon">🥗</span><span class="nav-texto">Diario</span>
                 </button>
                 <button class="nav-item" id="nav-perfil">
                     <span class="nav-icon">⚙️</span><span class="nav-texto">Perfil</span>
@@ -1039,7 +1091,8 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             const origen = propio ? 'Tus productos' : 'Open Food Facts';
 
             // Sugerimos la porción de la etiqueta si la trae (si no, 100 g)
-            const gramos = await pedirGramos(etiqueta, item.porcion_g || 100);
+            const porcionG = Number(item.porcion_g) > 0 ? Number(item.porcion_g) : null;
+            const gramos = await pedirGramos(etiqueta, porcionG || 100, porcionG);
             if (!gramos) return; // cancelado: sin toast, sin ruido
 
             const producto = productoDesdeResultado(item);
@@ -1051,8 +1104,13 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
 
             try {
                 const fechaSeleccionada = document.querySelector('.day-item.active')?.dataset.date || dateKey;
-                await crearRegistroComida(userId, { items: [porcion] }, fechaSeleccionada,
+                const docId = await crearRegistroComida(userId, { items: [porcion] }, fechaSeleccionada,
                     `${gramos} g de ${etiqueta} (${origen})`);
+
+                // Micros que trajo OFF (sodio y otros): se guardan sin IA. Los
+                // que falten quedan null y no suman al día. Marca la ingesta
+                // como completa para que no quede "calculando micros" siempre.
+                await enriquecerRegistroConMicros(userId, fechaSeleccionada, docId, { items_micros: [porcion] });
 
                 // Producto propio: sube en las próximas búsquedas por cuánto se usa
                 if (propio) registrarUsoProducto(userId, item.nombre, item.marca).catch(() => {});
@@ -1492,7 +1550,8 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
                 }
 
                 // Preguntar cuánto se comió (modal propio, nunca prompt del navegador)
-                const gramos = await pedirGramos(producto.nombre);
+                const porcionG = Number(producto.porcion_g) > 0 ? Number(producto.porcion_g) : null;
+                const gramos = await pedirGramos(producto.nombre, porcionG || 100, porcionG);
                 if (!gramos) return; // cancelado: sin toast, sin ruido
 
                 const porcion = calcularPorcion(producto, gramos);

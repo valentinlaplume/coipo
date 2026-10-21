@@ -144,9 +144,6 @@ export const renderSugerencias = async (container, userData) => {
                     <span class="nav-add-circle">+</span>
                     <span class="nav-add-label">Registrar</span>
                 </button>
-                <button class="nav-item">
-                    <span class="nav-icon">🥗</span><span class="nav-texto">Diario</span>
-                </button>
                 <button class="nav-item" id="nav-perfil-sug">
                     <span class="nav-icon">⚙️</span><span class="nav-texto">Perfil</span>
                 </button>

@@ -26,12 +26,19 @@ export const crearRegistroComida = async (userId, datosMacros, fechaISO, foodDes
 
         const redondear = (num) => Number(Math.round(num + "e+2") + "e-2");
 
+        // Suma solo valores conocidos: si NINGÚN ítem trae el dato, el total es
+        // null (desconocido ≠ 0). Los macros siempre son numéricos.
+        const sumar = (valores) => {
+            const nums = valores.filter(v => typeof v === 'number' && isFinite(v));
+            return nums.length ? redondear(nums.reduce((a, b) => a + b, 0)) : null;
+        };
+
         const totales = {
             total_calorias:      redondear(items.reduce((s, i) => s + (Number(i.calorias)      || 0), 0)),
             total_proteinas:     redondear(items.reduce((s, i) => s + (Number(i.proteinas)     || 0), 0)),
             total_carbohidratos: redondear(items.reduce((s, i) => s + (Number(i.carbohidratos) || 0), 0)),
             total_grasas:        redondear(items.reduce((s, i) => s + (Number(i.grasas)        || 0), 0)),
-            total_fibra:         redondear(items.reduce((s, i) => s + (Number(i.fibra)         || 0), 0)),
+            total_fibra:         sumar(items.map(i => i.fibra)),
             confianza_general:   items.some(i => i.confianza === 'baja')  ? 'baja'  :
                                  items.some(i => i.confianza === 'media') ? 'media' : 'alta'
         };
@@ -54,14 +61,18 @@ export const crearRegistroComida = async (userId, datosMacros, fechaISO, foodDes
             creado_el:          serverTimestamp()
         });
 
-        await setDoc(resumenRef, {
+        const acumulados = {
             acumulado_calorias:      increment(totales.total_calorias),
             acumulado_proteinas:     increment(totales.total_proteinas),
             acumulado_carbohidratos: increment(totales.total_carbohidratos),
             acumulado_grasas:        increment(totales.total_grasas),
-            acumulado_fibra:         increment(totales.total_fibra),
             ultima_actualizacion:    serverTimestamp()
-        }, { merge: true });
+        };
+        // Sin dato de fibra no se toca el acumulado (nunca sumar 0).
+        if (totales.total_fibra !== null) {
+            acumulados.acumulado_fibra = increment(totales.total_fibra);
+        }
+        await setDoc(resumenRef, acumulados, { merge: true });
 
         return docRef.id;
 
@@ -83,19 +94,26 @@ export const enriquecerRegistroConMicros = async (userId, dateKey, docId, datosM
         
         const redondear = (num) => Number(Math.round(num + "e+2") + "e-2");
 
+        // Solo valores conocidos: si ningún ítem trae el micro, queda null
+        // (la UI lo muestra como "—"; nunca se suma 0 por desconocido).
+        const sumar = (valores) => {
+            const nums = valores.filter(v => typeof v === 'number' && isFinite(v));
+            return nums.length ? redondear(nums.reduce((a, b) => a + b, 0)) : null;
+        };
+
         // Recalculamos matemáticamente perfectos
         const totalesCalculados = {
-            total_sodio_mg:         redondear(items_micros.reduce((s, i) => s + (Number(i.sodio_mg) || 0), 0)),
-            total_potasio_mg:       redondear(items_micros.reduce((s, i) => s + (Number(i.potasio_mg) || 0), 0)),
-            total_magnesio_mg:      redondear(items_micros.reduce((s, i) => s + (Number(i.magnesio_mg) || 0), 0)),
-            total_calcio_mg:        redondear(items_micros.reduce((s, i) => s + (Number(i.calcio_mg) || 0), 0)),
-            total_hierro_mg:        redondear(items_micros.reduce((s, i) => s + (Number(i.hierro_mg) || 0), 0)),
-            total_zinc_mg:          redondear(items_micros.reduce((s, i) => s + (Number(i.zinc_mg) || 0), 0)),
-            total_vitamina_d_ui:    redondear(items_micros.reduce((s, i) => s + (Number(i.vitamina_d_ui) || 0), 0)),
-            total_vitamina_b12_mcg: redondear(items_micros.reduce((s, i) => s + (Number(i.vitamina_b12_mcg) || 0), 0)),
+            total_sodio_mg:         sumar(items_micros.map(i => i.sodio_mg)),
+            total_potasio_mg:       sumar(items_micros.map(i => i.potasio_mg)),
+            total_magnesio_mg:      sumar(items_micros.map(i => i.magnesio_mg)),
+            total_calcio_mg:        sumar(items_micros.map(i => i.calcio_mg)),
+            total_hierro_mg:        sumar(items_micros.map(i => i.hierro_mg)),
+            total_zinc_mg:          sumar(items_micros.map(i => i.zinc_mg)),
+            total_vitamina_d_ui:    sumar(items_micros.map(i => i.vitamina_d_ui)),
+            total_vitamina_b12_mcg: sumar(items_micros.map(i => i.vitamina_b12_mcg)),
             total_omega3: {
-                ala_mg:     redondear(items_micros.reduce((s, i) => s + (Number(i.omega3?.ala_mg) || 0), 0)),
-                epa_dha_mg: redondear(items_micros.reduce((s, i) => s + (Number(i.omega3?.epa_dha_mg) || 0), 0))
+                ala_mg:     sumar(items_micros.map(i => i.omega3?.ala_mg)),
+                epa_dha_mg: sumar(items_micros.map(i => i.omega3?.epa_dha_mg))
             }
         };
 
@@ -106,20 +124,24 @@ export const enriquecerRegistroConMicros = async (userId, dateKey, docId, datosM
             micros_completos: true 
         });
 
-        // 2. Acumular micros en el resumen del día
-        await setDoc(resumenRef, {
-            acumulado_sodio_mg:         increment(totalesCalculados.total_sodio_mg),
-            acumulado_potasio_mg:       increment(totalesCalculados.total_potasio_mg),
-            acumulado_magnesio_mg:      increment(totalesCalculados.total_magnesio_mg),
-            acumulado_calcio_mg:        increment(totalesCalculados.total_calcio_mg),
-            acumulado_hierro_mg:        increment(totalesCalculados.total_hierro_mg),
-            acumulado_zinc_mg:          increment(totalesCalculados.total_zinc_mg),
-            acumulado_vitamina_d_ui:    increment(totalesCalculados.total_vitamina_d_ui),
-            acumulado_vitamina_b12_mcg: increment(totalesCalculados.total_vitamina_b12_mcg),
-            acumulado_omega3_ala_mg:    increment(totalesCalculados.total_omega3.ala_mg),
-            acumulado_omega3_epa_dha_mg:increment(totalesCalculados.total_omega3.epa_dha_mg),
-            ultima_actualizacion:       serverTimestamp()
-        }, { merge: true });
+        // 2. Acumular micros en el resumen del día (solo los conocidos)
+        const acumulados = { ultima_actualizacion: serverTimestamp() };
+        const micros = {
+            acumulado_sodio_mg:         totalesCalculados.total_sodio_mg,
+            acumulado_potasio_mg:       totalesCalculados.total_potasio_mg,
+            acumulado_magnesio_mg:      totalesCalculados.total_magnesio_mg,
+            acumulado_calcio_mg:        totalesCalculados.total_calcio_mg,
+            acumulado_hierro_mg:        totalesCalculados.total_hierro_mg,
+            acumulado_zinc_mg:          totalesCalculados.total_zinc_mg,
+            acumulado_vitamina_d_ui:    totalesCalculados.total_vitamina_d_ui,
+            acumulado_vitamina_b12_mcg: totalesCalculados.total_vitamina_b12_mcg,
+            acumulado_omega3_ala_mg:    totalesCalculados.total_omega3.ala_mg,
+            acumulado_omega3_epa_dha_mg:totalesCalculados.total_omega3.epa_dha_mg
+        };
+        for (const [campo, valor] of Object.entries(micros)) {
+            if (valor !== null) acumulados[campo] = increment(valor);
+        }
+        await setDoc(resumenRef, acumulados, { merge: true });
 
         console.log("✅ Micros enriquecidos matemáticamente en background para doc:", docId);
 
@@ -168,26 +190,35 @@ export const eliminarIngesta = async (userId, dateKey, ingesta) => {
             });
             console.log("Última comida eliminada. Resumen reseteado a 0.");
         } else {
-            // SI TODAVÍA QUEDAN COMIDAS: Restamos normalmente (macros + micros)
+            // SI TODAVÍA QUEDAN COMIDAS: Restamos normalmente (macros + micros).
+            // Los campos null (sin dato) NO se tocan: no se escribe un 0 falso.
+            const macros = ingesta.resumen_macros || {};
             const updates = {
-                acumulado_calorias: increment(-(ingesta.resumen_macros?.total_calorias || 0)),
-                acumulado_proteinas: increment(-(ingesta.resumen_macros?.total_proteinas || 0)),
-                acumulado_carbohidratos: increment(-(ingesta.resumen_macros?.total_carbohidratos || 0)),
-                acumulado_grasas: increment(-(ingesta.resumen_macros?.total_grasas || 0)),
-                acumulado_fibra: increment(-(ingesta.resumen_macros?.total_fibra || 0))
+                acumulado_calorias: increment(-(macros.total_calorias || 0)),
+                acumulado_proteinas: increment(-(macros.total_proteinas || 0)),
+                acumulado_carbohidratos: increment(-(macros.total_carbohidratos || 0)),
+                acumulado_grasas: increment(-(macros.total_grasas || 0))
             };
+            if (typeof macros.total_fibra === 'number') {
+                updates.acumulado_fibra = increment(-macros.total_fibra);
+            }
 
             if (microsIngesta) {
-                updates.acumulado_sodio_mg = increment(-(microsIngesta.total_sodio_mg || 0));
-                updates.acumulado_potasio_mg = increment(-(microsIngesta.total_potasio_mg || 0));
-                updates.acumulado_magnesio_mg = increment(-(microsIngesta.total_magnesio_mg || 0));
-                updates.acumulado_calcio_mg = increment(-(microsIngesta.total_calcio_mg || 0));
-                updates.acumulado_hierro_mg = increment(-(microsIngesta.total_hierro_mg || 0));
-                updates.acumulado_zinc_mg = increment(-(microsIngesta.total_zinc_mg || 0));
-                updates.acumulado_vitamina_d_ui = increment(-(microsIngesta.total_vitamina_d_ui || 0));
-                updates.acumulado_vitamina_b12_mcg = increment(-(microsIngesta.total_vitamina_b12_mcg || 0));
-                updates.acumulado_omega3_ala_mg = increment(-(microsIngesta.total_omega3?.ala_mg || 0));
-                updates.acumulado_omega3_epa_dha_mg = increment(-(microsIngesta.total_omega3?.epa_dha_mg || 0));
+                const micros = {
+                    acumulado_sodio_mg: microsIngesta.total_sodio_mg,
+                    acumulado_potasio_mg: microsIngesta.total_potasio_mg,
+                    acumulado_magnesio_mg: microsIngesta.total_magnesio_mg,
+                    acumulado_calcio_mg: microsIngesta.total_calcio_mg,
+                    acumulado_hierro_mg: microsIngesta.total_hierro_mg,
+                    acumulado_zinc_mg: microsIngesta.total_zinc_mg,
+                    acumulado_vitamina_d_ui: microsIngesta.total_vitamina_d_ui,
+                    acumulado_vitamina_b12_mcg: microsIngesta.total_vitamina_b12_mcg,
+                    acumulado_omega3_ala_mg: microsIngesta.total_omega3?.ala_mg,
+                    acumulado_omega3_epa_dha_mg: microsIngesta.total_omega3?.epa_dha_mg
+                };
+                for (const [campo, valor] of Object.entries(micros)) {
+                    if (typeof valor === 'number') updates[campo] = increment(-valor);
+                }
             }
 
             await updateDoc(resumenRef, updates);
@@ -213,25 +244,34 @@ export const restaurarIngesta = async (userId, dateKey, ingesta) => {
         await addDoc(comidasRef, datos);
 
         const microsIngesta = (ingesta.micros_completos && ingesta.resumen_micros) ? ingesta.resumen_micros : null;
+        // Igual que al eliminar: los null (sin dato) no se suman como 0.
+        const macros = ingesta.resumen_macros || {};
         const updates = {
-            acumulado_calorias: increment(ingesta.resumen_macros?.total_calorias || 0),
-            acumulado_proteinas: increment(ingesta.resumen_macros?.total_proteinas || 0),
-            acumulado_carbohidratos: increment(ingesta.resumen_macros?.total_carbohidratos || 0),
-            acumulado_grasas: increment(ingesta.resumen_macros?.total_grasas || 0),
-            acumulado_fibra: increment(ingesta.resumen_macros?.total_fibra || 0)
+            acumulado_calorias: increment(macros.total_calorias || 0),
+            acumulado_proteinas: increment(macros.total_proteinas || 0),
+            acumulado_carbohidratos: increment(macros.total_carbohidratos || 0),
+            acumulado_grasas: increment(macros.total_grasas || 0)
         };
+        if (typeof macros.total_fibra === 'number') {
+            updates.acumulado_fibra = increment(macros.total_fibra);
+        }
 
         if (microsIngesta) {
-            updates.acumulado_sodio_mg = increment(microsIngesta.total_sodio_mg || 0);
-            updates.acumulado_potasio_mg = increment(microsIngesta.total_potasio_mg || 0);
-            updates.acumulado_magnesio_mg = increment(microsIngesta.total_magnesio_mg || 0);
-            updates.acumulado_calcio_mg = increment(microsIngesta.total_calcio_mg || 0);
-            updates.acumulado_hierro_mg = increment(microsIngesta.total_hierro_mg || 0);
-            updates.acumulado_zinc_mg = increment(microsIngesta.total_zinc_mg || 0);
-            updates.acumulado_vitamina_d_ui = increment(microsIngesta.total_vitamina_d_ui || 0);
-            updates.acumulado_vitamina_b12_mcg = increment(microsIngesta.total_vitamina_b12_mcg || 0);
-            updates.acumulado_omega3_ala_mg = increment(microsIngesta.total_omega3?.ala_mg || 0);
-            updates.acumulado_omega3_epa_dha_mg = increment(microsIngesta.total_omega3?.epa_dha_mg || 0);
+            const micros = {
+                acumulado_sodio_mg: microsIngesta.total_sodio_mg,
+                acumulado_potasio_mg: microsIngesta.total_potasio_mg,
+                acumulado_magnesio_mg: microsIngesta.total_magnesio_mg,
+                acumulado_calcio_mg: microsIngesta.total_calcio_mg,
+                acumulado_hierro_mg: microsIngesta.total_hierro_mg,
+                acumulado_zinc_mg: microsIngesta.total_zinc_mg,
+                acumulado_vitamina_d_ui: microsIngesta.total_vitamina_d_ui,
+                acumulado_vitamina_b12_mcg: microsIngesta.total_vitamina_b12_mcg,
+                acumulado_omega3_ala_mg: microsIngesta.total_omega3?.ala_mg,
+                acumulado_omega3_epa_dha_mg: microsIngesta.total_omega3?.epa_dha_mg
+            };
+            for (const [campo, valor] of Object.entries(micros)) {
+                if (typeof valor === 'number') updates[campo] = increment(valor);
+            }
         }
 
         await updateDoc(resumenRef, updates);

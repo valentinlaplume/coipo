@@ -224,6 +224,32 @@
     color: var(--coipo-primary);
 }
 
+/* Chip de porción sugerida (modal de gramos): atajo "1 porción (X g)" */
+.porcion-chip {
+    display: flex;
+    width: fit-content;
+    min-height: var(--touch-min);
+    margin: var(--sp-2) auto var(--sp-10);
+    padding: 0 var(--sp-14);
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--coipo-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--coipo-card);
+    color: var(--coipo-text);
+    font-family: var(--font-main);
+    font-size: var(--fs-min);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.porcion-chip.active {
+    border-color: var(--coipo-primary);
+    background: var(--coipo-surface);
+    color: var(--coipo-primary-dark);
+}
+.porcion-chip:active { transform: scale(0.97); }
+
 /* Chips de momento del día: fijos (no scrollean con el contenido) y con
    scroll horizontal propio si no entran en pantallas angostas */
 .ingesta-momentos {

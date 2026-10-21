@@ -164,6 +164,20 @@ test('proyectarProductoCodigo: además conserva image_front_url', () => {
     assert.equal(p.product_name, 'Nutella');
 });
 
+test('proyectarProductoCodigo: conserva la porción de la etiqueta', () => {
+    const p = _interno.proyectarProductoCodigo({
+        serving_size: '30 g',
+        serving_quantity: '30',
+        nutriments: {}
+    });
+    assert.equal(p.serving_size, '30 g');
+    assert.equal(p.serving_quantity, 30);
+
+    const sinPorcion = _interno.proyectarProductoCodigo({ nutriments: {} });
+    assert.equal(sinPorcion.serving_size, null);
+    assert.equal(sinPorcion.serving_quantity, null);
+});
+
 // ── pedirOFF: fallback entre mirrors con fetch simulado (sin red) ───────────
 
 const stubFetch = (respuestas) => {

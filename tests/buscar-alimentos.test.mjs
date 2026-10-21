@@ -199,7 +199,8 @@ const productoBase = (extra = {}) => ({
 test('normalizarResultados: devuelve SOLO los campos pedidos (y la fuente)', () => {
     const [r] = _interno.normalizarResultados([productoBase()]);
     assert.deepEqual(Object.keys(r).sort(), [
-        'c100', 'codigo', 'fuente', 'g100', 'imagen', 'kcal100', 'marca', 'nombre', 'p100', 'porcion_g'
+        'azucares100', 'c100', 'codigo', 'fibra100', 'fuente', 'g100', 'imagen',
+        'kcal100', 'marca', 'nombre', 'p100', 'porcion_g', 'sodio100_mg'
     ]);
     assert.deepEqual(r, {
         codigo: '77912345',
@@ -210,6 +211,9 @@ test('normalizarResultados: devuelve SOLO los campos pedidos (y la fuente)', () 
         p100: 13,
         c100: 60,
         g100: 7,
+        fibra100: null,
+        sodio100_mg: null,
+        azucares100: null,
         porcion_g: 40,
         fuente: 'openfoodfacts'
     });
@@ -235,6 +239,27 @@ test('normalizarResultados: descarta productos sin nombre o sin kcal/100 g', () 
     ]);
     assert.equal(salida.length, 1);
     assert.equal(salida[0].codigo, '5');
+});
+
+test('normalizarResultados: fibra/sodio/azúcares cuando OFF los trae (sodio en mg)', () => {
+    const [r] = _interno.normalizarResultados([productoBase({
+        nutriments: {
+            'energy-kcal_100g': 100,
+            fiber_100g: 2.5,
+            sodium_100g: 0.4,
+            sugars_100g: 8.2
+        }
+    })]);
+    assert.equal(r.fibra100, 2.5);
+    assert.equal(r.sodio100_mg, 400); // g/100 g → mg
+    assert.equal(r.azucares100, 8.2);
+});
+
+test('normalizarResultados: micros sin dato → null (nunca 0)', () => {
+    const [r] = _interno.normalizarResultados([productoBase()]);
+    assert.equal(r.fibra100, null);
+    assert.equal(r.sodio100_mg, null);
+    assert.equal(r.azucares100, null);
 });
 
 test('normalizarResultados: sin marca o imagen → null (y macros faltantes → 0)', () => {

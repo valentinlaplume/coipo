@@ -32,7 +32,8 @@ test('tokens.css existe, se carga antes que main.css y define el núcleo', () =>
         'el orden debe ser tokens → components → main');
 
     for (const token of [
-        '--coipo-bg', '--coipo-surface', '--coipo-primary', '--coipo-text', '--coipo-text-muted',
+        '--coipo-bg', '--coipo-surface', '--coipo-primary', '--coipo-primary-light',
+        '--coipo-primary-rgb', '--coipo-text', '--coipo-text-muted',
         '--radius-md', '--radius-lg', '--radius-pill', '--sp-8', '--sp-16',
         '--fs-min', '--fs-caption', '--fs-base', '--font-main',
         '--touch-min', '--touch-md', '--touch-fila',
@@ -102,11 +103,6 @@ test('los componentes ya no están definidos en varios archivos a la vez', () =>
 // ── var() sin definir ───────────────────────────────────────────────────────
 
 test('ningún var() queda sin definir ni fallback', () => {
-    // Bugs heredados: NO se definen a propósito (definirlos cambiaría el
-    // aspecto actual de .meal-item.pending-new). Si se toca ese componente,
-    // agregar el token a tokens.css y sacarlo de esta lista.
-    const heredados = new Set(['--coipo-primary-light', '--coipo-primary-rgb']);
-
     const listarCss = (dir) => readdirSync(dir).flatMap(n => {
         const p = join(dir, n);
         if (statSync(p).isDirectory()) return listarCss(p);
@@ -128,7 +124,6 @@ test('ningún var() queda sin definir ni fallback', () => {
         const txt = readFileSync(ruta, 'utf8');
         for (const m of txt.matchAll(/var\(\s*(--[\w-]+)\s*([,)])/g)) {
             if (m[2] === ',') continue;                       // tiene fallback
-            if (heredados.has(m[1])) continue;                // bug heredado documentado
             if (definidos.has(m[1])) continue;
             if (!huerfanos.has(m[1])) huerfanos.set(m[1], []);
             huerfanos.get(m[1]).push(ruta.replace(raiz + '/', ''));

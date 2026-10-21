@@ -144,6 +144,12 @@ const proyectarNutriments = (nutriments) => {
 
 const textoOSiNo = (valor) => (typeof valor === 'string' ? valor : null);
 
+const numeroOSiNo = (valor) => {
+    if (valor === null || valor === undefined || valor === '') return null;
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : null;
+};
+
 const proyectarProductoBusqueda = (p) => ({
     product_name: typeof p.product_name === 'string' ? p.product_name : '',
     product_name_es: typeof p.product_name_es === 'string' ? p.product_name_es : '',
@@ -154,7 +160,10 @@ const proyectarProductoBusqueda = (p) => ({
 
 const proyectarProductoCodigo = (p) => ({
     ...proyectarProductoBusqueda(p),
-    image_front_url: textoOSiNo(p.image_front_url)
+    image_front_url: textoOSiNo(p.image_front_url),
+    // Porción de la etiqueta: el modal de gramos la usa como valor inicial.
+    serving_size: textoOSiNo(p.serving_size),
+    serving_quantity: numeroOSiNo(p.serving_quantity)
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

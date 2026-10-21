@@ -22,9 +22,28 @@ const obtenerNutriente = (nutrientes = {}, key, factor = 1) => {
     return typeof valor === 'number' && !isNaN(valor) ? Number(valor) * factor : 0;
 };
 
+// Igual que obtenerNutriente, pero distingue "sin dato" (null) de 0.
+const nutrienteONull = (nutrientes = {}, key, factor = 1) => {
+    const valor = nutrientes[key];
+    return typeof valor === 'number' && !isNaN(valor) ? Number(valor) * factor : null;
+};
+
 const redondear = (valor, decimales = 1) => {
     if (typeof valor !== 'number' || isNaN(valor)) return 0;
     return Math.round(valor * Math.pow(10, decimales)) / Math.pow(10, decimales);
+};
+
+// "30 g" / "100 ml" → 30 (la app trabaja en gramos)
+const gramosDeServingSize = (texto) => {
+    if (typeof texto !== 'string') return null;
+    const m = /(\d+(?:[.,]\d+)?)\s*g/i.exec(texto);
+    return m ? Number(m[1].replace(',', '.')) : null;
+};
+
+const porcionDe = (p = {}) => {
+    const cantidad = Number(p.serving_quantity);
+    if (Number.isFinite(cantidad) && cantidad > 0) return cantidad;
+    return gramosDeServingSize(p.serving_size);
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -83,28 +102,34 @@ export const buscarEnOpenFoodFacts = async (barcode) => {
 
         const p = data.product;
         const n = p.nutriments ?? {};
+        const ala = nutrienteONull(n, 'alpha-linolenic-acid_100g');
+        const epa = nutrienteONull(n, 'epa_100g');
+        const dha = nutrienteONull(n, 'dha_100g');
+        const epaDha = (epa === null && dha === null) ? null : (epa || 0) + (dha || 0);
 
         return {
             barcode,
             nombre: p.product_name || p.product_name_es || 'Producto sin nombre',
             marca: p.brands ?? null,
             imagen_url: p.image_front_url ?? null,
+            porcion_g: porcionDe(p),
             por_100g: {
+                // Macros obligatorios (0 si faltan) — los micros distinguen null
                 calorias: obtenerNutriente(n, 'energy-kcal_100g'),
                 proteinas: obtenerNutriente(n, 'proteins_100g'),
                 carbohidratos: obtenerNutriente(n, 'carbohydrates_100g'),
                 grasas: obtenerNutriente(n, 'fat_100g'),
-                fibra: obtenerNutriente(n, 'fiber_100g'),
-                sodio_mg: obtenerNutriente(n, 'sodium_100g', 1000),
-                potasio_mg: obtenerNutriente(n, 'potassium_100g'),
-                magnesio_mg: obtenerNutriente(n, 'magnesium_100g'),
-                calcio_mg: obtenerNutriente(n, 'calcium_100g'),
-                hierro_mg: obtenerNutriente(n, 'iron_100g'),
-                zinc_mg: obtenerNutriente(n, 'zinc_100g'),
-                omega3: {
-                    ala_mg: obtenerNutriente(n, 'alpha-linolenic-acid_100g'),
-                    epa_dha_mg: obtenerNutriente(n, 'epa_100g') + obtenerNutriente(n, 'dha_100g')
-                }
+                fibra: nutrienteONull(n, 'fiber_100g'),
+                sodio_mg: nutrienteONull(n, 'sodium_100g', 1000),
+                azucares_g: nutrienteONull(n, 'sugars_100g'),
+                potasio_mg: nutrienteONull(n, 'potassium_100g'),
+                magnesio_mg: nutrienteONull(n, 'magnesium_100g'),
+                calcio_mg: nutrienteONull(n, 'calcium_100g'),
+                hierro_mg: nutrienteONull(n, 'iron_100g'),
+                zinc_mg: nutrienteONull(n, 'zinc_100g'),
+                omega3: (ala === null && epaDha === null)
+                    ? null
+                    : { ala_mg: ala, epa_dha_mg: epaDha }
             },
             fuente: 'openfoodfacts'
         };
@@ -263,25 +288,33 @@ export const calcularPorcion = (producto, gramos) => {
     const factor = gramos / 100;
     const p = producto.por_100g;
 
+    // null = sin dato. Nunca convertir "no hay dato" en 0: la UI muestra "—"
+    // y los totales del día no suman esos campos.
+    const escalar = (valor, decimales = 1) =>
+        (typeof valor === 'number' && isFinite(valor) ? redondear(valor * factor, decimales) : null);
+
+    const ala = escalar(p.omega3?.ala_mg, 0);
+    const epaDha = escalar(p.omega3?.epa_dha_mg, 0);
+
     return {
         alimento: producto.nombre,
         marca: producto.marca || null,
         gramos_estimados: gramos,
-        calorias: redondear(p.calorias * factor, 1),
-        proteinas: redondear(p.proteinas * factor, 1),
-        carbohidratos: redondear(p.carbohidratos * factor, 1),
-        grasas: redondear(p.grasas * factor, 1),
-        fibra: redondear(p.fibra * factor, 1),
-        sodio_mg: redondear(p.sodio_mg * factor, 0),
-        potasio_mg: redondear(p.potasio_mg * factor, 0),
-        magnesio_mg: redondear(p.magnesio_mg * factor, 0),
-        calcio_mg: redondear(p.calcio_mg * factor, 0),
-        hierro_mg: redondear(p.hierro_mg * factor, 1),
-        zinc_mg: redondear(p.zinc_mg * factor, 1),
-        omega3: {
-            ala_mg: redondear(p.omega3.ala_mg * factor, 0),
-            epa_dha_mg: redondear(p.omega3.epa_dha_mg * factor, 0)
-        },
+        calorias: redondear((Number(p.calorias) || 0) * factor, 1),
+        proteinas: redondear((Number(p.proteinas) || 0) * factor, 1),
+        carbohidratos: redondear((Number(p.carbohidratos) || 0) * factor, 1),
+        grasas: redondear((Number(p.grasas) || 0) * factor, 1),
+        fibra: escalar(p.fibra, 1),
+        sodio_mg: escalar(p.sodio_mg, 0),
+        azucares_g: escalar(p.azucares_g, 1),
+        potasio_mg: escalar(p.potasio_mg, 0),
+        magnesio_mg: escalar(p.magnesio_mg, 0),
+        calcio_mg: escalar(p.calcio_mg, 0),
+        hierro_mg: escalar(p.hierro_mg, 1),
+        zinc_mg: escalar(p.zinc_mg, 1),
+        omega3: (ala === null && epaDha === null)
+            ? null
+            : { ala_mg: ala, epa_dha_mg: epaDha },
         fuente_datos: producto.fuente
     };
 };
