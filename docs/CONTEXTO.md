@@ -78,14 +78,22 @@ src/config/firebase.js   Config pública desde import.meta.env (VITE_*).
 src/config/config.js     Endpoint IA (/api/sugerencias) y rate-limit config.
 src/styles/tokens.css    ÚNICO :root global (colores, espacios, radios, fs).
 src/styles/components.css Componentes centralizados (botones, chips, pestañas,
-                         modal, filas, buscador). No duplicar reglas acá ni
-                         en las vistas.
+                         modal, filas, buscador, bottom-nav). No duplicar reglas
+                         acá ni en las vistas.
+src/components/bottom-nav.js  ÚNICO componente de la nav inferior (Hoy ·
+                         Diario · [+] Registrar · Ideas · Perfil): mismo HTML
+                         y handlers por vista. El botón central es la acción
+                         primaria elevada.
 src/css/main.css         Layout principal (importa tokens).
 src/css/tema-oscuro.css  Overrides de color para html[data-tema="oscuro"].
 src/css/gestos.css       Estilos de los gestos (feedback visual).
 src/views/*/*.view.js    Una vista por carpeta (splash, login, register,
-                         forgot-password, onboarding, dashboard, sugerencias,
-                         perfil), cada una con su CSS.
+                         forgot-password, onboarding, dashboard, diario,
+                         sugerencias, perfil), cada una con su CSS.
+src/views/diario/diario.view.js  Historial semanal de sólo lectura: gráfico de
+                         kcal, resumen (promedios y días en rango) y lista de
+                         7 días. Lee `resumen_diario` y reutiliza la caché del
+                         dashboard; no lee comidas ni usa IA.
 src/views/dashboard/dashboard.view.js  Vista principal (~2350 líneas): Hoy,
                          hoja Nueva Ingesta (3 pestañas), recetas, escáner,
                          toasts, modales de gramos. Es el hub de la app.
@@ -125,6 +133,9 @@ src/utils/receta-math.js      Lógica pura de recetas: regla de tres, porciones,
                          por-100g, payload canónico para guardar.
 src/utils/sugerencias-logic.js Lógica pura del asistente: intents, momento por
                          hora, restantes del día, caché de sugerencias.
+src/utils/diario.logic.mjs    Lógica pura del Diario: semanas (lunes a domingo,
+                         límites, futuro), rango ±10 %, promedios que ignoran
+                         días sin registro y detección de "hay comidas".
 src/utils/unit-converter.js   Unidades (tazas, cdas… → gramos).
 src/utils/gestos.js           Gestos iOS: hacerDeslizable (cierre por arrastre),
                          hacerFilaDeslizable (swipe en filas),
@@ -139,9 +150,9 @@ netlify/functions/openfoodfacts.js     Proxy OFF (barcode/imagen/nombre);
 prompts/sugerencias_system.txt         System prompt del asistente (inyectado
                          al bundle de la función vía netlify.toml).
 firestore.rules             Reglas de seguridad (todo por usuario).
-tests/*.mjs                 node --test: buscar-alimentos (34), openfoodfacts
-                         (19), sugerencias (16), ingesta-ui (13),
-                         estilos-base (7).
+tests/*.mjs                 node --test (105 en verde): búsqueda/OFF,
+                         sugerencias, ingesta UI, estilos base, resumen diario
+                         y lógica del Diario.
 AGENTS.md + .agents/skills/ui-coach/SKILL.md  Reglas para agentes: OBLIGATORIO
                          leer la skill antes de tocar CSS/UI.
 firebase.json              Solo `firestore.rules` (la app y el backend viven en
@@ -157,7 +168,7 @@ Todo bajo el usuario; reglas: cada usuario solo ve lo suyo (`firestore.rules`).
 |---|---|---|
 | `usuarios/{uid}` | `sexo, edad, altura, peso, objetivo, tipo_dieta, ritmo_semanal, nivel_actividad, pasos_diarios, horas_sueno, lesiones, alimentos_favoritos, frecuencia_comidas, meta_agua, plan_nutricional {kcal, proteinas_g, carbohidratos_g, grasas_g, agua, micros…}, onboarding_completado, tema, creado_el` | Perfil + plan. Se recalcula al terminar onboarding y al editar desde Perfil. |
 | `usuarios/{uid}/ingestas_diarias/{dateKey}/comidas/{docId}` | `alimentos[] (alimento, gramos_estimados, calorias, proteinas, carbohidratos, grasas, fibra…), resumen_macros {total_*, confianza_general}, resumen_micros, items_micros, micros_completos, formato, descripcion_original, es_porcion_receta, creado_el` | Una comida registrada. `dateKey` = `YYYY-MM-DD` en **hora local**. |
-| `usuarios/{uid}/resumen_diario/{dateKey}` | `acumulado_calorias/proteinas/carbohidratos/grasas/fibra, acumulado_sodio_mg, acumulado_potasio_mg, acumulado_magnesio_mg, acumulado_calcio_mg, acumulado_hierro_mg, acumulado_zinc_mg, acumulado_vitamina_d_ui, acumulado_vitamina_b12_mcg, acumulado_omega3_ala_mg, acumulado_omega3_epa_dha_mg, vasos_agua, ultima_actualizacion` | Totales del día **incrementales** (`increment()` al registrar, restar al borrar). Es la fuente para "restantes". Es **derivable**: `recalcularResumenDia` lo reconstruye sumando las comidas y conserva `vasos_agua`. |
+| `usuarios/{uid}/resumen_diario/{dateKey}` | `acumulado_calorias/proteinas/carbohidratos/grasas/fibra, acumulado_sodio_mg, acumulado_potasio_mg, acumulado_magnesio_mg, acumulado_calcio_mg, acumulado_hierro_mg, acumulado_zinc_mg, acumulado_vitamina_d_ui, acumulado_vitamina_b12_mcg, acumulado_omega3_ala_mg, acumulado_omega3_epa_dha_mg, comidas_count, vasos_agua, ultima_actualizacion` | Totales del día **incrementales** (`increment()` al registrar, restar al borrar; `comidas_count` se ajusta al tamaño real al borrar). Es la fuente para "restantes" y para el Diario. Es **derivable**: `recalcularResumenDia` lo reconstruye sumando las comidas, conserva `vasos_agua` y fija `comidas_count`. |
 | `usuarios/{uid}/recetas/{id}` | `nombre_receta, descripcion, ingredientes[], porciones_totales, totales_macros_completa, totales_macros_porcion, totales_micros, por_100g, peso_total_g, creado_el, editado_el` | Templates reutilizables. Borrar la receta NO borra ingestas ya registradas. |
 | `usuarios/{uid}/productos/{id}` | `nombre, marca, barcode?, imagen_url, por_100g {calorias, proteinas, carbohidratos, grasas, fibra, micros…}` | "Tus productos" (primera fuente de búsqueda). |
 | `usuarios/{uid}/feedback_sugerencias/{id}` | `intent, momento, voto, ref, creado_el` | Votos 👍👎 del asistente. |
@@ -179,8 +190,20 @@ de 7 días (cambio de día con `invalidarCacheDia`), acciones rápidas (Nueva
 Receta / Usar Receta), lista "Ingestas de Hoy" (kcal, pills de macros, chips de
 micros o "Calculando micros…", acordeón de detalle por ingrediente, ✕ eliminar
 con deshacer), botón "¿Qué comiste ahora?", Hidratación (vasos),
-Micronutrientes (details). Bottom-nav: Hoy · Sugerencias · **+ Registrar** ·
-Perfil (el ítem "Diario" se quitó; el historial sigue pendiente, ver §10).
+Micronutrientes (details). Bottom-nav compartida: Hoy · Diario ·
+**+ Registrar** (botón central elevado) · Ideas · Perfil. La etiqueta visible
+de Sugerencias es "Ideas" para que las 5 columnas entren sin cortar a 360 px.
+
+**Diario** (`diario.view.js`, sólo lectura): selector de semana con ‹ › y rango
+("13 – 19 oct"), sin semanas futuras; gráfico de barras CSS de kcal por día con
+línea de meta; resumen (promedio de kcal, "en rango X de Y", proteína promedio)
+y lista de 7 días de más reciente a más antiguo ("Sin registro" cuando no hay
+comidas). Los promedios usan **sólo días con registro**; "en rango" es ±10 % de
+la meta (`TOLERANCIA_RANGO` en `diario.logic.mjs`). Lee `resumen_diario` de los
+7 días y reutiliza la caché del dashboard; no lee comidas individuales, no usa
+IA ni `onSnapshot`. Tocar un día abre el dashboard en esa fecha con
+`{ idHistorial: 'diario-dia' }`; el gesto de volver restaura el Diario en la
+misma semana.
 
 **Nueva Ingesta** (hoja `#modal-registro`, ~92 dvh; cabecera/chips/pestañas
 fijas, un solo cuerpo scrolleable `.ingesta-cuerpo`). Pestañas:
@@ -227,8 +250,9 @@ usuario), cerrar sesión.
 `buscarProducto(codigo)` (productos_globales → OFF vía `/api/openfoodfacts?barcode=`)
 → si viene de OFF se guarda en "Tus productos" → `pedirGramos` → registrar.
 
-**Estadísticas**: no hay pantalla dedicada; viven dentro de Hoy (stats del día,
-micros del día, historial de 7 días en el calendario). Ver §10.
+**Estadísticas**: el Diario muestra el historial semanal (kcal, promedios y días
+en rango). No hay una pantalla de estadísticas separada ni historial más allá
+de las semanas consultables. Ver §10.
 
 ## 6. Cómo funciona la IA
 
@@ -308,12 +332,19 @@ Orden de fuentes (IA nunca es la primera):
   `micros_completos`).
 - **UX de móvil primero**: targets ≥ 44 px, texto ≥ 14 px, sin scroll
   horizontal, modales cerrables por arrastre Y por botón, toasts en lugar de
-  `alert()`.
-- **Fuera de alcance por ahora**: pantalla de estadísticas e historial
-  ("Diario" se quitó del nav; falta definir la vista); análisis de comida por
-  **foto** (el tipo `imagen` está en la API pero no hay UI); completar con IA
-  los micros que OFF no trae (se decidió no hacerlo: se guarda `null`);
-  multi-idioma; wearables/pasos reales; emuladores de Firebase.
+  `alert()`. La bottom-nav es un solo componente
+  (`src/components/bottom-nav.js`): Hoy · Diario · **+ Registrar** · Ideas ·
+  Perfil, con el botón central elevado y el destino activo en pill.
+- **Diario = historial de sólo lectura**: no sugiere comidas, no usa IA y no
+  lee las comidas individuales; sólo `resumen_diario` + caché en memoria. Un
+  día sin documento o sin comidas (`comidas_count === 0`) es "Sin registro",
+  distinto de un día real de 0 kcal. Promedios y "en rango" se calculan sólo
+  sobre días con registro, con ±10 % de la meta en una única constante.
+- **Fuera de alcance por ahora**: pantalla de estadísticas separada (el Diario
+  cubre el historial semanal); análisis de comida por **foto** (el tipo
+  `imagen` está en la API pero no hay UI); completar con IA los micros que OFF
+  no trae (se decidió no hacerlo: se guarda `null`); multi-idioma;
+  wearables/pasos reales; emuladores de Firebase.
 - **Dato desconocido = `null`, nunca 0**: los productos de OFF/Tus productos
   pueden no traer fibra, sodio o azúcares. Se persiste `null` y los totales/UI
   distinguen "sin dato" (`—`) de "consumo 0".
@@ -377,7 +408,14 @@ Orden de fuentes (IA nunca es la primera):
   suma 0). Los incrementos de `resumen_diario` ignoran los `null`.
 - `porcion_g` de OFF como valor inicial del modal de gramos + chip
   "1 porción (X g)"; si el producto no trae porción, 100 g.
-- 92 tests en verde y `npm run build` OK. `dist/` es artefacto de build: está
+- Pantalla **Diario** (historial semanal, sólo lectura): selector de semana sin
+  futuro, gráfico de kcal con meta, resumen de promedios/días en rango y lista
+  de 7 días; tocar un día abre el dashboard existente y el gesto de volver
+  conserva la semana. Bottom-nav única compartida por todas las vistas, con
+  Registrar como botón central.
+- `comidas_count` en `resumen_diario` distingue "sin comidas" de un día de
+  0 kcal; se fija exacto al borrar y se reconstruye al recalcular.
+- 105 tests en verde y `npm run build` OK. `dist/` es artefacto de build: está
   en `.gitignore` y fuera del índice de Git (la carpeta local se conserva).
 - Limpieza: sin archivos `* copy.js`/`prompts-sugerencias.js`, sin el
   directorio legacy `functions/` ni el paquete npm `firebase`. `firebase.json`
@@ -385,10 +423,8 @@ Orden de fuentes (IA nunca es la primera):
 
 **A medias / pendientes conocidos**:
 
-- **Historial / "Diario"**: el ítem se quitó del bottom-nav en las 3 vistas
-  (Hoy, Sugerencias, Perfil); falta decidir y construir la vista de historial.
-- **No hay pantalla de estadísticas** ni historial más allá de los 7 días del
-  calendario.
+- **Estadísticas**: el Diario cubre el historial semanal; no hay una pantalla
+  de estadísticas separada ni historial más allá de las semanas consultables.
 - Tipos IA `imagen` y `busqueda` implementados en `groq.service.js` pero sin
   UI que los use (candidatos: foto de comida o búsqueda IA como fallback).
 - **Micros incompletos en productos**: OFF rara vez trae los 10 micros; los
