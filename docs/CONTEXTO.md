@@ -157,7 +157,7 @@ Todo bajo el usuario; reglas: cada usuario solo ve lo suyo (`firestore.rules`).
 |---|---|---|
 | `usuarios/{uid}` | `sexo, edad, altura, peso, objetivo, tipo_dieta, ritmo_semanal, nivel_actividad, pasos_diarios, horas_sueno, lesiones, alimentos_favoritos, frecuencia_comidas, meta_agua, plan_nutricional {kcal, proteinas_g, carbohidratos_g, grasas_g, agua, micros…}, onboarding_completado, tema, creado_el` | Perfil + plan. Se recalcula al terminar onboarding y al editar desde Perfil. |
 | `usuarios/{uid}/ingestas_diarias/{dateKey}/comidas/{docId}` | `alimentos[] (alimento, gramos_estimados, calorias, proteinas, carbohidratos, grasas, fibra…), resumen_macros {total_*, confianza_general}, resumen_micros, items_micros, micros_completos, formato, descripcion_original, es_porcion_receta, creado_el` | Una comida registrada. `dateKey` = `YYYY-MM-DD` en **hora local**. |
-| `usuarios/{uid}/resumen_diario/{dateKey}` | `acumulado_calorias/proteinas/carbohidratos/grasas/fibra, acumulado_sodio_mg, acumulado_potasio_mg, acumulado_magnesio_mg, acumulado_calcio_mg, acumulado_hierro_mg, acumulado_zinc_mg, acumulado_vitamina_d_ui, acumulado_vitamina_b12_mcg, acumulado_omega3_ala_mg, acumulado_omega3_epa_dha_mg, vasos_agua, ultima_actualizacion` | Totales del día **incrementales** (`increment()` al registrar, restar al borrar). Es la fuente para "restantes". |
+| `usuarios/{uid}/resumen_diario/{dateKey}` | `acumulado_calorias/proteinas/carbohidratos/grasas/fibra, acumulado_sodio_mg, acumulado_potasio_mg, acumulado_magnesio_mg, acumulado_calcio_mg, acumulado_hierro_mg, acumulado_zinc_mg, acumulado_vitamina_d_ui, acumulado_vitamina_b12_mcg, acumulado_omega3_ala_mg, acumulado_omega3_epa_dha_mg, vasos_agua, ultima_actualizacion` | Totales del día **incrementales** (`increment()` al registrar, restar al borrar). Es la fuente para "restantes". Es **derivable**: `recalcularResumenDia` lo reconstruye sumando las comidas y conserva `vasos_agua`. |
 | `usuarios/{uid}/recetas/{id}` | `nombre_receta, descripcion, ingredientes[], porciones_totales, totales_macros_completa, totales_macros_porcion, totales_micros, por_100g, peso_total_g, creado_el, editado_el` | Templates reutilizables. Borrar la receta NO borra ingestas ya registradas. |
 | `usuarios/{uid}/productos/{id}` | `nombre, marca, barcode?, imagen_url, por_100g {calorias, proteinas, carbohidratos, grasas, fibra, micros…}` | "Tus productos" (primera fuente de búsqueda). |
 | `usuarios/{uid}/feedback_sugerencias/{id}` | `intent, momento, voto, ref, creado_el` | Votos 👍👎 del asistente. |
@@ -323,9 +323,15 @@ Orden de fuentes (IA nunca es la primera):
 - **UI optimista + totales incrementales**: al registrar, se actualiza la caché
   local del dashboard y se re-renderiza sin esperar la red. Los totales del día
   (`resumen_diario`) se mantienen con `increment()` en Firestore (sumar al
-  registrar, **restar** al borrar, sumar al restaurar). No recalcular leyendo
-  todas las comidas. *Decisión: NO se implementa `onSnapshot`; la semana se
-  carga con `getDoc`/`getDocs` + caché optimista en memoria
+  registrar, **restar** al borrar, sumar al restaurar). El camino normal **no**
+  relee todas las comidas. Para reparar descuadres existe
+  `recalcularResumenDia(uid, dateKey)` (`src/services/db/resumen-dia.service.js`):
+  lee las ingestas del día, suma con la lógica pura de
+  `resumen-dia.logic.mjs` (ignora `null`) y reescribe el resumen con `setDoc`,
+  conservando `vasos_agua`. Se dispara en background al abrir un día si el total
+  guardado difiere de la suma real (tolerancia 1 kcal) y a mano desde el menú
+  del día → "Recalcular día". *Decisión: NO se implementa `onSnapshot`; la
+  semana se carga con `getDoc`/`getDocs` + caché optimista en memoria
   (`cargarSemanaEnCache`, `limpiarCacheDashboard`, `invalidarCacheDia`).
   `onSnapshot` solo se evaluaría para sincronizar cambios entre dispositivos.*
 - **Caché de datos**: la semana se cachea por usuario; cambiar de cuenta
@@ -416,6 +422,12 @@ Orden de fuentes (IA nunca es la primera):
   `restaurarIngesta` solo operan sobre números (`typeof valor === 'number'`).
   No "arreglar" con `|| 0` ni `increment(null)`: escribiría un 0 falso y la UI
   lo mostraría como consumo.
+- **`resumen_diario` puede desincronizarse**: los incrementos asumen que cada
+  alta/baja se completa; si una escritura quedó a medias, el día queda
+  descuadrado. `recalcularResumenDia` lo reconstruye desde las comidas
+  (automático al abrir si la diferencia supera 1 kcal, o manual en el menú del
+  día). No meter el recálculo en el camino caliente: sigue siendo derivado y
+  respeta `null` (desconocido ≠ 0).
 - **`enriquecerRegistroConMicros` no es IA**: solo hace `updateDoc`/`setDoc`.
   La llamada tipo `micros` vive en `analizarComida()` (`microsPromise`) y se usa
   solo en comidas descritas por texto y extras de receta. No agregarla a
