@@ -55,6 +55,13 @@ const {
 
 const USER_AGENT = 'CoachNutricional/1.0';
 
+// 401/403 con código estable en el cuerpo y el MISMO código en el log.
+// Solo se registra el código: nunca token, headers ni valores de entorno.
+const responderAuth = (statusCode, codigo, cors) => {
+    console.error(`❌ [BUSCAR] ${statusCode} ${codigo}`);
+    return responder(statusCode, { error: codigo }, cors);
+};
+
 const MIN_Q = 3;
 const MAX_Q = 80;
 const PAGE_SIZE = 20; // 20 porque muchos hits de OFF traen datos incompletos
@@ -336,7 +343,7 @@ exports.handler = async (event) => {
 
     if (metodo === 'OPTIONS') {
         if (origen && !origenPermitido(origen)) {
-            return { statusCode: 403, headers: cors, body: '' };
+            return responderAuth(403, 'origen_no_permitido', cors);
         }
         return { statusCode: 204, headers: cors, body: '' };
     }
@@ -346,7 +353,7 @@ exports.handler = async (event) => {
     }
 
     if (origen && !origenPermitido(origen)) {
-        return responder(403, { error: 'Origen no permitido.' }, cors);
+        return responderAuth(403, 'origen_no_permitido', cors);
     }
 
     // ── Sesión ──
@@ -354,9 +361,12 @@ exports.handler = async (event) => {
     const token = typeof autorizacion === 'string' && /^Bearer\s+\S+/i.test(autorizacion.trim())
         ? autorizacion.replace(/^Bearer\s+/i, '').trim()
         : '';
-    const sesion = token ? await verificarToken(token) : null;
+    if (!token) {
+        return responderAuth(401, 'sin_token', cors);
+    }
+    const sesion = await verificarToken(token);
     if (!sesion) {
-        return responder(401, { error: 'Tu sesión expiró. Entrá de nuevo para continuar.' }, cors);
+        return responderAuth(401, 'token_invalido', cors);
     }
 
     // ── Consulta ──

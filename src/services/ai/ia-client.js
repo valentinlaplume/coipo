@@ -62,7 +62,7 @@ const extraerJSON = (texto) => {
  * @param {string}   [solicitud.systemPrompt] prompt del sistema (lo ignora el servidor en 'sugerencias')
  * @param {string|Array} solicitud.userContent mensaje del usuario (string o partes con imagen)
  * @returns {Promise<any>} respuesta JSON ya parseada
- * @throws {Error} con código: SIN_SESION | SESION_INVALIDA | SATURADO | RED | TIMEOUT | HTTP_xxx
+ * @throws {Error} con código: SIN_SESION | SESION_INVALIDA | CONFIG_SERVIDOR | SATURADO | RED | TIMEOUT | HTTP_xxx
  */
 export const pedirIA = async ({ tipo, systemPrompt, userContent }) => {
     const controller = new AbortController();
@@ -80,8 +80,15 @@ export const pedirIA = async ({ tipo, systemPrompt, userContent }) => {
             }
         });
 
-        if (errorSesion === ERROR_SESION.SIN_USUARIO) throw new Error('SIN_SESION');
-        if (errorSesion === ERROR_SESION.TOKEN_RECHAZADO) throw new Error('SESION_INVALIDA');
+        if (errorSesion === ERROR_SESION.SIN_USUARIO || errorSesion === ERROR_SESION.SIN_TOKEN) {
+            throw new Error('SIN_SESION');
+        }
+        if (errorSesion === ERROR_SESION.CONFIG_SERVIDOR) {
+            throw new Error('CONFIG_SERVIDOR');
+        }
+        if (errorSesion) {
+            throw new Error('SESION_INVALIDA');
+        }
 
         if (respuesta.status !== 429) estadoIA.limpiar();
 
@@ -90,9 +97,8 @@ export const pedirIA = async ({ tipo, systemPrompt, userContent }) => {
             estadoIA.marcarSaturado(segundos * 1000);
             throw new Error('SATURADO');
         }
-        if (respuesta.status === 401 || respuesta.status === 403) {
-            throw new Error('SESION_INVALIDA');
-        }
+        if (respuesta.status === 403) throw new Error('CONFIG_SERVIDOR');
+        if (respuesta.status === 401) throw new Error('SESION_INVALIDA');
         if (!respuesta.ok) throw new Error(`HTTP_${respuesta.status}`);
 
         const cuerpo = await respuesta.json().catch(() => null);

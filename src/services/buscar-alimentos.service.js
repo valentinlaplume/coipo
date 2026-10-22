@@ -27,6 +27,7 @@ const MAX_ENTRADAS_CACHE = 40; // por si el usuario busca mucho: no inflar stora
 
 const MSJ_SIN_SESION = 'Iniciá sesión para continuar.';
 const MSJ_SESION_NO_VERIFICADA = 'No pudimos verificar tu sesión, probá de nuevo.';
+const MSJ_CONFIG_SERVIDOR = 'Error de configuración del servidor';
 
 const cacheMemoria = new Map(); // consulta normalizada → resultados
 
@@ -96,10 +97,13 @@ export const buscarAlimentos = async (texto) => {
             }
         });
 
-        if (errorSesion === ERROR_SESION.SIN_USUARIO) {
+        if (errorSesion === ERROR_SESION.SIN_USUARIO || errorSesion === ERROR_SESION.SIN_TOKEN) {
             return { estado: 'error', resultados: [], mensaje: MSJ_SIN_SESION };
         }
-        if (errorSesion === ERROR_SESION.TOKEN_RECHAZADO) {
+        if (errorSesion === ERROR_SESION.CONFIG_SERVIDOR) {
+            return { estado: 'error', resultados: [], mensaje: MSJ_CONFIG_SERVIDOR };
+        }
+        if (errorSesion === ERROR_SESION.TOKEN_INVALIDO || errorSesion === ERROR_SESION.TOKEN_RECHAZADO) {
             return { estado: 'error', resultados: [], mensaje: MSJ_SESION_NO_VERIFICADA };
         }
 

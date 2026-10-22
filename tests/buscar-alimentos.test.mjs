@@ -11,6 +11,17 @@ process.env.ALLOWED_ORIGIN = 'https://app.ejemplo.com';
 
 const { handler, _interno } = await import('../netlify/functions/buscar-alimentos.js');
 
+const conLogs = async (fn) => {
+    const original = console.error;
+    const lineas = [];
+    console.error = (...args) => lineas.push(args.map(a => String(a)).join(' '));
+    try {
+        return { resultado: await fn(), lineas };
+    } finally {
+        console.error = original;
+    }
+};
+
 // ── Handler: CORS, sesión y validación (sin red) ─────────────────────────────
 
 test('preflight OPTIONS con origen permitido → 204 con CORS', async () => {
@@ -31,6 +42,7 @@ test('preflight OPTIONS con origen NO permitido → 403 sin CORS', async () => {
     });
     assert.equal(r.statusCode, 403);
     assert.equal(r.headers['Access-Control-Allow-Origin'], undefined);
+    assert.equal(JSON.parse(r.body).error, 'origen_no_permitido');
 });
 
 test('POST → 405 (solo GET/OPTIONS)', async () => {
@@ -45,25 +57,54 @@ test('GET con origen NO permitido → 403', async () => {
         queryStringParameters: { q: 'avena' }
     });
     assert.equal(r.statusCode, 403);
+    assert.equal(JSON.parse(r.body).error, 'origen_no_permitido');
 });
 
-test('GET sin token → 401 con mensaje amigable', async () => {
+test('GET sin token → 401 con código sin_token', async () => {
     const r = await handler({
         httpMethod: 'GET',
         headers: { origin: 'https://app.ejemplo.com' },
         queryStringParameters: { q: 'avena' }
     });
     assert.equal(r.statusCode, 401);
-    assert.equal(JSON.parse(r.body).error, 'Tu sesión expiró. Entrá de nuevo para continuar.');
+    assert.equal(JSON.parse(r.body).error, 'sin_token');
 });
 
-test('GET con token inválido → 401 (no pasa la verificación)', async () => {
+test('GET con token inválido → 401 token_invalido (no pasa la verificación)', async () => {
     const r = await handler({
         httpMethod: 'GET',
         headers: { origin: 'https://app.ejemplo.com', authorization: 'Bearer token-falso' },
         queryStringParameters: { q: 'avena' }
     });
     assert.equal(r.statusCode, 401);
+    assert.equal(JSON.parse(r.body).error, 'token_invalido');
+});
+
+test('401/403 registran en el log el mismo código que devuelven', async () => {
+    const casos = [
+        {
+            evento: { httpMethod: 'GET', headers: { origin: 'https://otro-sitio.com' }, queryStringParameters: { q: 'avena' } },
+            codigo: 'origen_no_permitido'
+        },
+        {
+            evento: { httpMethod: 'GET', headers: { origin: 'https://app.ejemplo.com' }, queryStringParameters: { q: 'avena' } },
+            codigo: 'sin_token'
+        },
+        {
+            evento: {
+                httpMethod: 'GET',
+                headers: { origin: 'https://app.ejemplo.com', authorization: 'Bearer token-falso' },
+                queryStringParameters: { q: 'avena' }
+            },
+            codigo: 'token_invalido'
+        }
+    ];
+
+    for (const { evento, codigo } of casos) {
+        const { resultado, lineas } = await conLogs(() => handler(evento));
+        assert.equal(JSON.parse(resultado.body).error, codigo);
+        assert.ok(lineas.some(l => l.includes(codigo)), `falta el log de ${codigo}`);
+    }
 });
 
 test('validación de la consulta: mínimo 3 y máximo 80 caracteres', () => {

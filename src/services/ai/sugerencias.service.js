@@ -30,7 +30,8 @@ const MSJ = {
     respuesta: 'No pude entender la respuesta. Probá una vez más.',
     limitado:  'Demasiadas consultas por ahora. Esperá un momento y volvé a intentar.',
     sinSesion: 'Iniciá sesión para continuar.',
-    sesionInvalida: 'No pudimos verificar tu sesión, probá de nuevo.'
+    sesionInvalida: 'No pudimos verificar tu sesión, probá de nuevo.',
+    configServidor: 'Error de configuración del servidor'
 };
 
 // ── Llamada al backend /api/sugerencias (Bearer = ID token de Firebase Auth) ──
@@ -106,6 +107,7 @@ export const consultarSugerencias = async (payload) => {
             if (e.message === 'SATURADO') throw new Error(MSJ.limitado);
             if (e.message === 'SIN_SESION') throw new Error(MSJ.sinSesion);
             if (e.message === 'SESION_INVALIDA') throw new Error(MSJ.sesionInvalida);
+            if (e.message === 'CONFIG_SERVIDOR') throw new Error(MSJ.configServidor);
             if (estadoIA.allOnCooldown()) throw new Error(MSJ.saturado);
             throw new Error(MSJ.conexion);
         }

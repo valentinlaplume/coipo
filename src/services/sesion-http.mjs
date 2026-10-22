@@ -6,17 +6,20 @@
 // fuerza una renovación con getIdToken(true) y se repite la request UNA sola
 // vez. Si el segundo intento también da 401, la sesión se considera rechazada.
 //
-// Distingue dos causas para que la UI no diga siempre "tu sesión expiró":
-//   - SIN_USUARIO: no hay auth.currentUser → pedir login.
-//   - TOKEN_RECHAZADO: había usuario, pero el servidor rechazó el token
-//     incluso después de renovarlo → mensaje genérico de verificación.
+// El servidor devuelve códigos estables en `{ error }` para 401/403:
+//   sin_token | token_invalido | origen_no_permitido
+// Así la UI distingue "pedir login", "no pudimos verificar tu sesión" y
+// "error de configuración del servidor" sin mirar textos humanos.
 //
 // Lógica pura con fetch y usuario inyectables: se testea en Node sin
 // navegador ni Firebase (tests/sesion-http.test.mjs).
 
 export const ERROR_SESION = Object.freeze({
     SIN_USUARIO: 'SIN_USUARIO',
-    TOKEN_RECHAZADO: 'TOKEN_RECHAZADO'
+    SIN_TOKEN: 'SIN_TOKEN',
+    TOKEN_INVALIDO: 'TOKEN_INVALIDO',
+    TOKEN_RECHAZADO: 'TOKEN_RECHAZADO',
+    CONFIG_SERVIDOR: 'CONFIG_SERVIDOR'
 });
 
 const conToken = (opciones, token) => ({
@@ -27,6 +30,25 @@ const conToken = (opciones, token) => ({
     }
 });
 
+// Lee el código del cuerpo sin consumir la Response original.
+const leerCodigo = async (respuesta) => {
+    if (!respuesta || typeof respuesta.clone !== 'function') return null;
+    try {
+        const cuerpo = await respuesta.clone().json();
+        return typeof cuerpo?.error === 'string' ? cuerpo.error : null;
+    } catch {
+        return null;
+    }
+};
+
+const clasificar = (status, codigo) => {
+    if (codigo === 'sin_token') return ERROR_SESION.SIN_TOKEN;
+    if (codigo === 'token_invalido') return ERROR_SESION.TOKEN_INVALIDO;
+    // Cualquier 403 que no sea de token es configuración (típicamente CORS).
+    if (codigo === 'origen_no_permitido' || status === 403) return ERROR_SESION.CONFIG_SERVIDOR;
+    return ERROR_SESION.TOKEN_RECHAZADO;
+};
+
 /**
  * Hace una request con Bearer y reintenta una vez tras un 401.
  *
@@ -36,7 +58,7 @@ const conToken = (opciones, token) => ({
  * @param {object}   [solicitud.opciones] opciones de fetch (method, body, headers, signal…)
  * @param {Function} [solicitud.fetchImpl] fetch inyectable para tests
  * @returns {Promise<{respuesta: Response|null, errorSesion: string|null, reintentado: boolean}>}
- *   `errorSesion` es null cuando la respuesta final NO es un 401 por sesión.
+ *   `errorSesion` es null cuando la respuesta final no es un error de sesión.
  */
 export const pedirConSesion = async ({
     usuario,
@@ -59,24 +81,48 @@ export const pedirConSesion = async ({
     }
 
     let respuesta = await fetchImpl(url, conToken(opciones, token));
+
+    if (respuesta.status === 403) {
+        const codigo = await leerCodigo(respuesta);
+        return {
+            respuesta,
+            errorSesion: clasificar(403, codigo),
+            reintentado: false
+        };
+    }
+
     if (respuesta.status !== 401) {
         return { respuesta, errorSesion: null, reintentado: false };
     }
+
+    const codigoInicial = await leerCodigo(respuesta);
 
     // Un único reintento con token forzado (getIdToken(true)).
     try {
         token = await usuario.getIdToken(true);
     } catch {
-        return { respuesta, errorSesion: ERROR_SESION.TOKEN_RECHAZADO, reintentado: true };
+        return {
+            respuesta,
+            errorSesion: clasificar(401, codigoInicial),
+            reintentado: true
+        };
     }
     if (!token) {
-        return { respuesta, errorSesion: ERROR_SESION.TOKEN_RECHAZADO, reintentado: true };
+        return {
+            respuesta,
+            errorSesion: clasificar(401, codigoInicial),
+            reintentado: true
+        };
     }
 
     respuesta = await fetchImpl(url, conToken(opciones, token));
+    const codigoFinal = await leerCodigo(respuesta);
+
     return {
         respuesta,
-        errorSesion: respuesta.status === 401 ? ERROR_SESION.TOKEN_RECHAZADO : null,
+        errorSesion: respuesta.status === 401 || respuesta.status === 403
+            ? clasificar(respuesta.status, codigoFinal)
+            : null,
         reintentado: true
     };
 };

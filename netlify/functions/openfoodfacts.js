@@ -93,6 +93,13 @@ const responder = (statusCode, cuerpo, cabecerasExtra = {}) => ({
     body: JSON.stringify(cuerpo)
 });
 
+// 401/403 con código estable en el cuerpo y el MISMO código en el log.
+// Solo se registra el código: nunca token, headers ni valores de entorno.
+const responderAuth = (statusCode, codigo, cors) => {
+    console.error(`❌ [OFF] ${statusCode} ${codigo}`);
+    return responder(statusCode, { error: codigo }, cors);
+};
+
 // ── Token de Firebase Auth (issuer/audience = proyecto) ──
 const jwks = createRemoteJWKSet(new URL(URL_JWKS), {
     cooldownDuration: 30000,
@@ -226,7 +233,7 @@ exports.handler = async (event) => {
     // Preflight
     if (metodo === 'OPTIONS') {
         if (origen && !origenPermitido(origen)) {
-            return { statusCode: 403, headers: cors, body: '' };
+            return responderAuth(403, 'origen_no_permitido', cors);
         }
         return { statusCode: 204, headers: cors, body: '' };
     }
@@ -238,7 +245,7 @@ exports.handler = async (event) => {
     // CORS restringido a ALLOWED_ORIGIN (sin header Origin → no es una request
     // de navegador, así que pasa igual)
     if (origen && !origenPermitido(origen)) {
-        return responder(403, { error: 'Origen no permitido.' }, cors);
+        return responderAuth(403, 'origen_no_permitido', cors);
     }
 
     // ── Sesión ──
@@ -246,9 +253,12 @@ exports.handler = async (event) => {
     const token = typeof autorizacion === 'string' && /^Bearer\s+\S+/i.test(autorizacion.trim())
         ? autorizacion.replace(/^Bearer\s+/i, '').trim()
         : '';
-    const sesion = token ? await verificarToken(token) : null;
+    if (!token) {
+        return responderAuth(401, 'sin_token', cors);
+    }
+    const sesion = await verificarToken(token);
     if (!sesion) {
-        return responder(401, { error: 'Tu sesión expiró. Entrá de nuevo para continuar.' }, cors);
+        return responderAuth(401, 'token_invalido', cors);
     }
 
     // ── Parámetros ──

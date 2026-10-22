@@ -13,6 +13,17 @@ process.env.ALLOWED_ORIGIN = 'https://app.ejemplo.com,https://admin.ejemplo.com'
 
 const { handler, _interno } = await import('../netlify/functions/sugerencias.js');
 
+const conLogs = async (fn) => {
+    const original = console.error;
+    const lineas = [];
+    console.error = (...args) => lineas.push(args.map(a => String(a)).join(' '));
+    try {
+        return { resultado: await fn(), lineas };
+    } finally {
+        console.error = original;
+    }
+};
+
 const cabeceras = (extra = {}) => ({ ...extra });
 
 test('parsea GROQ_API_KEYS: separa por coma, recorta y descarta vacías', () => {
@@ -20,14 +31,24 @@ test('parsea GROQ_API_KEYS: separa por coma, recorta y descarta vacías', () => 
     assert.equal(_interno.cantidadModelos(), 2);
 });
 
-test('POST sin token de Firebase → 401', async () => {
+test('POST sin token de Firebase → 401 sin_token', async () => {
     const r = await handler({
         httpMethod: 'POST',
         headers: { origin: 'https://app.ejemplo.com' },
         body: JSON.stringify({ tipo: 'sugerencias', userContent: '{}' })
     });
     assert.equal(r.statusCode, 401);
-    assert.equal(JSON.parse(r.body).error, 'Tu sesión expiró. Entrá de nuevo para continuar.');
+    assert.equal(JSON.parse(r.body).error, 'sin_token');
+});
+
+test('POST con token inválido → 401 token_invalido', async () => {
+    const r = await handler({
+        httpMethod: 'POST',
+        headers: { origin: 'https://app.ejemplo.com', authorization: 'Bearer token-falso' },
+        body: JSON.stringify({ tipo: 'sugerencias', userContent: '{}' })
+    });
+    assert.equal(r.statusCode, 401);
+    assert.equal(JSON.parse(r.body).error, 'token_invalido');
 });
 
 test('preflight OPTIONS con origen permitido → 204 y CORS correcto', async () => {
@@ -47,6 +68,7 @@ test('preflight OPTIONS con origen NO permitido → 403 sin CORS', async () => {
     });
     assert.equal(r.statusCode, 403);
     assert.equal(r.headers['Access-Control-Allow-Origin'], undefined);
+    assert.equal(JSON.parse(r.body).error, 'origen_no_permitido');
 });
 
 test('POST con origen NO permitido → 403', async () => {
@@ -56,6 +78,38 @@ test('POST con origen NO permitido → 403', async () => {
         body: '{}'
     });
     assert.equal(r.statusCode, 403);
+    assert.equal(JSON.parse(r.body).error, 'origen_no_permitido');
+});
+
+test('401/403 registran en el log el mismo código que devuelven', async () => {
+    const casos = [
+        {
+            evento: { httpMethod: 'POST', headers: { origin: 'https://otro-sitio.com' }, body: '{}' },
+            codigo: 'origen_no_permitido'
+        },
+        {
+            evento: {
+                httpMethod: 'POST',
+                headers: { origin: 'https://app.ejemplo.com' },
+                body: JSON.stringify({ tipo: 'sugerencias', userContent: '{}' })
+            },
+            codigo: 'sin_token'
+        },
+        {
+            evento: {
+                httpMethod: 'POST',
+                headers: { origin: 'https://app.ejemplo.com', authorization: 'Bearer token-falso' },
+                body: JSON.stringify({ tipo: 'sugerencias', userContent: '{}' })
+            },
+            codigo: 'token_invalido'
+        }
+    ];
+
+    for (const { evento, codigo } of casos) {
+        const { resultado, lineas } = await conLogs(() => handler(evento));
+        assert.equal(JSON.parse(resultado.body).error, codigo);
+        assert.ok(lineas.some(l => l.includes(codigo)), `falta el log de ${codigo}`);
+    }
 });
 
 test('método distinto de POST/OPTIONS → 405', async () => {
