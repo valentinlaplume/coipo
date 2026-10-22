@@ -82,8 +82,8 @@ ${ejemplo}`;
 // se conserva como prefijo porque varias vistas lo chequean así.
 const MSJ_IA = {
     SATURADO:           'RATE_LIMIT: El asistente está saturado. Intentá en 1 minuto.',
-    SIN_SESION:         'Tu sesión expiró. Entrá de nuevo para continuar.',
-    SESION_INVALIDA:    'Tu sesión expiró. Entrá de nuevo para continuar.',
+    SIN_SESION:         'Iniciá sesión para continuar.',
+    SESION_INVALIDA:    'No pudimos verificar tu sesión, probá de nuevo.',
     RED:                'Sin conexión — probá de nuevo.',
     TIMEOUT:            'Tardó demasiado — probá de nuevo.',
     RESPUESTA_VACIA:    'No pude entender la respuesta. Probá una vez más.',

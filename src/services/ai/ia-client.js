@@ -9,6 +9,7 @@
 // acá para que la UI (dashboard) pueda mostrar el contador de espera.
 
 import { auth } from '../../firebase-config.js';
+import { pedirConSesion, ERROR_SESION } from '../sesion-http.mjs';
 
 export const ENDPOINT_IA = '/api/sugerencias';
 
@@ -64,29 +65,23 @@ const extraerJSON = (texto) => {
  * @throws {Error} con código: SIN_SESION | SESION_INVALIDA | SATURADO | RED | TIMEOUT | HTTP_xxx
  */
 export const pedirIA = async ({ tipo, systemPrompt, userContent }) => {
-    const usuario = auth.currentUser;
-    if (!usuario) throw new Error('SIN_SESION');
-
-    let token;
-    try {
-        token = await usuario.getIdToken();
-    } catch {
-        throw new Error('SIN_SESION');
-    }
-
     const controller = new AbortController();
     const reloj = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
-        const respuesta = await fetch(ENDPOINT_IA, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({ tipo, systemPrompt, userContent }),
-            signal: controller.signal
+        const { respuesta, errorSesion } = await pedirConSesion({
+            usuario: auth.currentUser,
+            url: ENDPOINT_IA,
+            opciones: {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tipo, systemPrompt, userContent }),
+                signal: controller.signal
+            }
         });
+
+        if (errorSesion === ERROR_SESION.SIN_USUARIO) throw new Error('SIN_SESION');
+        if (errorSesion === ERROR_SESION.TOKEN_RECHAZADO) throw new Error('SESION_INVALIDA');
 
         if (respuesta.status !== 429) estadoIA.limpiar();
 

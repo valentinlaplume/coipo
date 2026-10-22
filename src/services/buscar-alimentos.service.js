@@ -15,7 +15,8 @@
 // a recargas dentro de la sesión del navegador). Sin IA: el cálculo de macros
 // se hace localmente con regla de tres (ver productoDesdeResultado).
 
-import { obtenerToken } from './ai/ia-client.js';
+import { auth } from '../firebase-config.js';
+import { pedirConSesion, ERROR_SESION } from './sesion-http.mjs';
 
 export const ENDPOINT_BUSCAR = '/api/buscar-alimentos';
 
@@ -23,6 +24,9 @@ const TIMEOUT_MS = 12000;
 const MIN_Q = 3;
 const CLAVE_CACHE = 'coipo_buscar_alimentos_v1';
 const MAX_ENTRADAS_CACHE = 40; // por si el usuario busca mucho: no inflar storage
+
+const MSJ_SIN_SESION = 'Iniciá sesión para continuar.';
+const MSJ_SESION_NO_VERIFICADA = 'No pudimos verificar tu sesión, probá de nuevo.';
 
 const cacheMemoria = new Map(); // consulta normalizada → resultados
 
@@ -79,28 +83,28 @@ export const buscarAlimentos = async (texto) => {
     }
 
     // 3) Red
-    const token = await obtenerToken();
-    if (!token) {
-        return { estado: 'error', resultados: [], mensaje: 'Tu sesión expiró. Entrá de nuevo para continuar.' };
-    }
-
     const controller = new AbortController();
     const reloj = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
-        const respuesta = await fetch(`${ENDPOINT_BUSCAR}?q=${encodeURIComponent(consulta)}`, {
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            signal: controller.signal
+        const { respuesta, errorSesion } = await pedirConSesion({
+            usuario: auth.currentUser,
+            url: `${ENDPOINT_BUSCAR}?q=${encodeURIComponent(consulta)}`,
+            opciones: {
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal
+            }
         });
+
+        if (errorSesion === ERROR_SESION.SIN_USUARIO) {
+            return { estado: 'error', resultados: [], mensaje: MSJ_SIN_SESION };
+        }
+        if (errorSesion === ERROR_SESION.TOKEN_RECHAZADO) {
+            return { estado: 'error', resultados: [], mensaje: MSJ_SESION_NO_VERIFICADA };
+        }
 
         const cuerpo = await respuesta.json().catch(() => null);
 
-        if (respuesta.status === 401) {
-            return { estado: 'error', resultados: [], mensaje: 'Tu sesión expiró. Entrá de nuevo para continuar.' };
-        }
         if (!respuesta.ok) {
             return {
                 estado: 'error',

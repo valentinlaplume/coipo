@@ -29,7 +29,8 @@ const MSJ = {
     conexion:  'No pude conectar con el asistente. Revisá tu conexión y probá de nuevo.',
     respuesta: 'No pude entender la respuesta. Probá una vez más.',
     limitado:  'Demasiadas consultas por ahora. Esperá un momento y volvé a intentar.',
-    sesion:    'Tu sesión expiró. Entrá de nuevo para continuar.'
+    sinSesion: 'Iniciá sesión para continuar.',
+    sesionInvalida: 'No pudimos verificar tu sesión, probá de nuevo.'
 };
 
 // ── Llamada al backend /api/sugerencias (Bearer = ID token de Firebase Auth) ──
@@ -103,7 +104,8 @@ export const consultarSugerencias = async (payload) => {
             respuesta = await llamarIA(contenido); // JSON ya parseado por el servidor
         } catch (e) {
             if (e.message === 'SATURADO') throw new Error(MSJ.limitado);
-            if (e.message === 'SIN_SESION' || e.message === 'SESION_INVALIDA') throw new Error(MSJ.sesion);
+            if (e.message === 'SIN_SESION') throw new Error(MSJ.sinSesion);
+            if (e.message === 'SESION_INVALIDA') throw new Error(MSJ.sesionInvalida);
             if (estadoIA.allOnCooldown()) throw new Error(MSJ.saturado);
             throw new Error(MSJ.conexion);
         }
