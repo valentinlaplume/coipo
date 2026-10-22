@@ -255,6 +255,19 @@ test('todos los getElementById del flujo de ingesta existen en el HTML', () => {
     assert.deepEqual(faltantes, [], `IDs referenciados y ausentes: ${faltantes.join(', ')}`);
 });
 
+test('el análisis con IA maneja la sesión y los micros sin promesas sueltas', () => {
+    // Las tres entradas (Nueva Ingesta, extras y confirmación de receta)
+    // arrancan el análisis por el helper que adjunta el catch de micros.
+    assert.equal((vista.match(/iniciarAnalisisComida\(/g) || []).length, 3);
+    assert.ok(!/analizarComida\s*\(/.test(vista), 'hay una llamada directa a analizarComida sin el helper');
+
+    // El catch principal muestra el mensaje del error (sesión incluida) y
+    // el finally libera el spinner.
+    assert.match(vista, /msg = textoError\(e, "No se pudo analizar la comida\. Intentá de nuevo\."\)/);
+    assert.match(vista, /clearInterval\(feedbackInterval\)/);
+    assert.match(vista, /quitarCargando\(btn\)/);
+});
+
 test('los controles de la hoja quedan cableados en la vista', () => {
     // ✕ cierra; las pestañas alternan paneles; el CTA de IA se habilita solo
     assert.match(vista, /btnCerrarIngesta\.onclick/);

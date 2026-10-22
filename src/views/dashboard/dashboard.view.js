@@ -4,6 +4,7 @@ import { calcularPlanNutricional } from '../../utils/nutrition-logic.js';
 // Chips de momento del día en "Nueva Ingesta": misma regla de horas que el
 // asistente de sugerencias (lógica pura, sin dependencias nuevas)
 import { momentoPorHora } from '../../utils/sugerencias-logic.js';
+import { iniciarAnalisisComida } from '../../utils/analisis-comida.mjs';
 // import { analizarComida, keyManager } from '../../services/ai/gemini.service.js';
 import { analizarComida, groqKeyManager
     , analizarReceta
@@ -1056,7 +1057,13 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         }, 1000);
 
         try {
-            const { rapido, microsPromise } = analizarComida(descripcion);
+            // `micros` ya viene con su catch adjunto: si `rapido` falla por
+            // sesión, no queda una promesa rechazada sin manejar.
+            const { rapido, micros } = iniciarAnalisisComida(
+                analizarComida,
+                descripcion,
+                e => console.warn('⚠️ Micros no disponibles:', e.message)
+            );
             const datosMacros = await rapido;
 
             console.log(datosMacros)
@@ -1076,8 +1083,8 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
             modalIA.style.display = "none";
             volverARender();
 
-            microsPromise
-                .then(m  => enriquecerRegistroConMicros(userId, dateKey, docId, m))
+            micros
+                .then(m => (m ? enriquecerRegistroConMicros(userId, dateKey, docId, m) : null))
                 // Si el día se abrió mientras los micros estaban pendientes,
                 // la caché quedó con micros_completos=false. Al terminar, se
                 // invalida para que la próxima apertura relea y pueda
@@ -1088,13 +1095,16 @@ export const renderDashboard = async (container, userData, fechaParaMostrar = ne
         } catch (e) {
             console.error("Error al analizar comida:", e);
 
+            const mensaje = String(e?.message || '');
             let msg;
-            if (e.message.startsWith('RATE_LIMIT')) {
+            if (mensaje.startsWith('RATE_LIMIT')) {
                 msg = "La IA está al límite — esperá 1 minuto";
-            } else if (e.message === 'TODAS_LAS_KEYS_INVALIDAS') {
+            } else if (mensaje === 'TODAS_LAS_KEYS_INVALIDAS') {
                 msg = "Error de configuración de API keys";
             } else {
-                msg = "No se pudo analizar la comida. Intentá de nuevo.";
+                // Conserva los mensajes de sesión de ia-client.js
+                // (SIN_SESION / SESION_INVALIDA) y el resto de errores amables.
+                msg = textoError(e, "No se pudo analizar la comida. Intentá de nuevo.");
             }
             mostrarToast(msg, 'error');
         } finally {
@@ -2032,12 +2042,13 @@ document.getElementById('calcular-extras-btn').onclick = async () => {
     const btnE = document.getElementById('calcular-extras-btn');
     ponerCargando(btnE, 'Analizando extras...');
     try {
-        const { rapido, microsPromise } = analizarComida(texto);
+        const { rapido, micros } = iniciarAnalisisComida(
+            analizarComida,
+            texto,
+            e => console.warn('Micros de extras no disponibles:', e.message)
+        );
         const datosExtras = await rapido;
-        const microsExtras = await microsPromise.catch(e => {
-            console.warn('Micros de extras no disponibles:', e.message);
-            return null;
-        });
+        const microsExtras = await micros;
         extrasCalculados = { texto, datos: prepararExtrasParaIngesta(datosExtras, microsExtras) };
         renderCalculoVivo();
         mostrarToast(`Extras: +${Math.round(extrasCalculados.datos.macros.total_calorias)} kcal al total`, 'success');
@@ -2418,12 +2429,13 @@ document.getElementById('confirmar-porciones').onclick = async () => {
             if (extrasYaCalculados) {
                 extras = extrasCalculados.datos;
             } else {
-                const { rapido, microsPromise } = analizarComida(extrasTexto);
+                const { rapido, micros } = iniciarAnalisisComida(
+                    analizarComida,
+                    extrasTexto,
+                    e => console.warn('Micros de extras no disponibles:', e.message)
+                );
                 const datosExtras = await rapido;
-                const microsExtras = await microsPromise.catch(e => {
-                    console.warn('Micros de extras no disponibles:', e.message);
-                    return null;
-                });
+                const microsExtras = await micros;
                 extras = prepararExtrasParaIngesta(datosExtras, microsExtras);
             }
         }
