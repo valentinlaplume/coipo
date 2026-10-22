@@ -48,10 +48,30 @@ const MODELO_VISION = 'qwen/qwen3.8-27b';
 
 const PROYECTO_FIREBASE = String(process.env.FIREBASE_PROJECT_ID || '').trim();
 
-const ORIGENES_PERMITIDOS = String(process.env.ALLOWED_ORIGIN || '')
-    .split(',')
-    .map(o => o.trim())
-    .filter(Boolean);
+// Normaliza un origen para compararlo sin depender de mayúsculas ni de una
+// barra final accidental en ALLOWED_ORIGIN (causa típica de 403 en producción).
+const normalizarOrigen = (valor) => {
+    const texto = String(valor || '').trim();
+    if (!texto) return '';
+    if (texto === '*') return '*';
+    try {
+        const url = new URL(texto);
+        return `${url.protocol}//${url.host}`.toLowerCase();
+    } catch {
+        return '';
+    }
+};
+
+// ALLOWED_ORIGIN + las URLs que Netlify inyecta en cada deploy. Así el mismo
+// sitio sigue funcionando aunque la variable falte o apunte a un dominio viejo.
+const ORIGENES_PERMITIDOS = [...new Set([
+    ...String(process.env.ALLOWED_ORIGIN || '').split(','),
+    process.env.URL,
+    process.env.DEPLOY_PRIME_URL,
+    process.env.DEPLOY_URL
+].map(normalizarOrigen).filter(Boolean))];
+
+const PERMITIR_TODOS = ORIGENES_PERMITIDOS.includes('*');
 
 // ── Límites / parámetros ──
 const TIEMPO_LIMITE_MS = 10000;      // 10s por intento (spec)
@@ -85,18 +105,34 @@ const obtenerHeader = (headers, nombre) => {
     return Array.isArray(valor) ? valor[0] : valor;
 };
 
-const origenPermitido = (origen) =>
-    Boolean(origen) && ORIGENES_PERMITIDOS.includes(origen);
+const origenPermitido = (origen, host) => {
+    if (!origen) return false;
+    if (PERMITIR_TODOS) return true;
 
-const cabecerasCORS = (origen) => {
+    const normalizado = normalizarOrigen(origen);
+    if (!normalizado) return false;
+    if (ORIGENES_PERMITIDOS.includes(normalizado)) return true;
+
+    // Mismo host que la request: cubre el dominio principal, alias y dominios
+    // personalizados sin obligar a mantenerlos a mano en ALLOWED_ORIGIN.
+    const hostRequest = String(host || '').split(',')[0].trim().toLowerCase();
+    if (!hostRequest) return false;
+    try {
+        return new URL(normalizado).host.toLowerCase() === hostRequest;
+    } catch {
+        return false;
+    }
+};
+
+const cabecerasCORS = (origen, host) => {
     const cors = {
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Max-Age': '86400',
         Vary: 'Origin'
     };
-    if (origen && origenPermitido(origen)) cors['Access-Control-Allow-Origin'] = origen;
-    else if (ORIGENES_PERMITIDOS.includes('*')) cors['Access-Control-Allow-Origin'] = '*';
+    if (origen && origenPermitido(origen, host)) cors['Access-Control-Allow-Origin'] = origen;
+    else if (PERMITIR_TODOS) cors['Access-Control-Allow-Origin'] = '*';
     return cors;
 };
 
@@ -366,12 +402,14 @@ const ejecutarConRotacion = async ({ systemPrompt, userContent, esImagen, temper
 // ─────────────────────────────────────────────────────────────────────────────
 exports.handler = async (event) => {
     const origen = obtenerHeader(event && event.headers, 'origin');
-    const cors = cabecerasCORS(origen);
+    const host = obtenerHeader(event && event.headers, 'host')
+        || obtenerHeader(event && event.headers, 'x-forwarded-host');
+    const cors = cabecerasCORS(origen, host);
     const metodo = String((event && event.httpMethod) || 'GET').toUpperCase();
 
     // Preflight
     if (metodo === 'OPTIONS') {
-        if (origen && !origenPermitido(origen)) {
+        if (origen && !origenPermitido(origen, host)) {
             return responderAuth(403, 'origen_no_permitido', cors);
         }
         return { statusCode: 204, headers: cors, body: '' };
@@ -381,9 +419,9 @@ exports.handler = async (event) => {
         return responder(405, { error: 'Método no permitido.' }, cors);
     }
 
-    // CORS restringido a ALLOWED_ORIGIN (sin header Origin → no es una request
-    // de navegador, así que pasa igual)
-    if (origen && !origenPermitido(origen)) {
+    // CORS restringido a ALLOWED_ORIGIN + el host actual (sin header Origin →
+    // no es una request de navegador, así que pasa igual)
+    if (origen && !origenPermitido(origen, host)) {
         return responderAuth(403, 'origen_no_permitido', cors);
     }
 
@@ -469,6 +507,7 @@ exports._interno = {
     extraerJSON,
     cabecerasCORS,
     origenPermitido,
+    normalizarOrigen,
     obtenerHeader,
     // Cantidad de keys configuradas (NUNCA se expone el valor de las keys)
     cantidadClaves: () => CLAVES.length,

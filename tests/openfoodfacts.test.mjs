@@ -114,6 +114,25 @@ test('cabecerasCORS: solo permite los orígenes de ALLOWED_ORIGIN', () => {
     assert.equal(malo['Access-Control-Allow-Origin'], undefined);
 });
 
+test('CORS: normaliza barra final y acepta el mismo host del deploy', async () => {
+    assert.equal(_interno.normalizarOrigen('https://app.ejemplo.com/'), 'https://app.ejemplo.com');
+    assert.equal(_interno.origenPermitido('https://app.ejemplo.com/', 'app.ejemplo.com'), true);
+    assert.equal(_interno.origenPermitido('https://malicioso.com', 'app.ejemplo.com'), false);
+
+    const propio = await handler({
+        httpMethod: 'OPTIONS',
+        headers: { origin: 'https://mi-deploy.netlify.app', host: 'mi-deploy.netlify.app' }
+    });
+    assert.equal(propio.statusCode, 204);
+    assert.equal(propio.headers['Access-Control-Allow-Origin'], 'https://mi-deploy.netlify.app');
+
+    const ajeno = await handler({
+        httpMethod: 'OPTIONS',
+        headers: { origin: 'https://malicioso.com', host: 'mi-deploy.netlify.app' }
+    });
+    assert.equal(ajeno.statusCode, 403);
+});
+
 // ── URLs (host fijo de OFF + paths validados → sin SSRF) ────────────────────
 
 test('construirURLBusqueda: URL exacta con el texto codificado', () => {

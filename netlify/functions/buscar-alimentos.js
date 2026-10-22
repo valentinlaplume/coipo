@@ -338,11 +338,13 @@ const buscarAlimentosEnCascada = async (consulta) => {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.handler = async (event) => {
     const origen = obtenerHeader(event && event.headers, 'origin');
-    const cors = cabecerasCORS(origen);
+    const host = obtenerHeader(event && event.headers, 'host')
+        || obtenerHeader(event && event.headers, 'x-forwarded-host');
+    const cors = cabecerasCORS(origen, host);
     const metodo = String((event && event.httpMethod) || 'GET').toUpperCase();
 
     if (metodo === 'OPTIONS') {
-        if (origen && !origenPermitido(origen)) {
+        if (origen && !origenPermitido(origen, host)) {
             return responderAuth(403, 'origen_no_permitido', cors);
         }
         return { statusCode: 204, headers: cors, body: '' };
@@ -352,7 +354,7 @@ exports.handler = async (event) => {
         return responder(405, { error: 'Método no permitido.' }, cors);
     }
 
-    if (origen && !origenPermitido(origen)) {
+    if (origen && !origenPermitido(origen, host)) {
         return responderAuth(403, 'origen_no_permitido', cors);
     }
 
