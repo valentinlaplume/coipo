@@ -1,11 +1,11 @@
 // src/views/splash/splash.view.js
 
-// ELIMINAMOS: import logoPNG from '../../assets/logo.png'; 
-// En Vanilla JS, usamos la ruta relativa directamente en el HTML.
+// Importar el asset deja que Vite lo hashee y lo copie a dist/assets.
+// Con una ruta fija a src/assets el build de producción daba 404.
+import logoPNG from '../../assets/logo.png';
 
 export const renderSplash = (container) => {
-    // Definimos la ruta como un string relativo al index.html
-    const logoPath = './src/assets/logo.png'; 
+    const logoPath = logoPNG;
 
     container.innerHTML = `
         <div class="splash-container fade-in">
