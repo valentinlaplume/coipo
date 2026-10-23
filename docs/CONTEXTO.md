@@ -261,7 +261,16 @@ de las semanas consultables. Ver §10.
   Firebase>` (`ia-client.js`). Las keys de Groq **nunca** llegan al cliente.
 - **Auth del servidor**: `jose` verifica el ID token con los JWKS de Google
   (`securetoken@system.gserviceaccount.com`) y que el proyecto coincida con
-  `FIREBASE_PROJECT_ID`; CORS restringido a `ALLOWED_ORIGIN`.
+  `FIREBASE_PROJECT_ID`.
+- **CORS (no es autenticación)**: las funciones aceptan como origen
+  `ALLOWED_ORIGIN`, las URLs que inyecta Netlify (`URL`, `DEPLOY_PRIME_URL`,
+  `DEPLOY_URL`) y el mismo host de la request (se compara el host de `Origin`
+  contra `Host`, con fallback a `X-Forwarded-Host`). Los orígenes se normalizan
+  (minúsculas y sin barra final); si no cumplen, la respuesta es
+  `403 { error: 'origen_no_permitido' }`. Si el request no trae header `Origin`
+  (típico GET del mismo origen), se saltea el chequeo CORS y la request sigue:
+  la protección real es la verificación del ID token. CORS solo limita qué
+  páginas del navegador pueden leer la respuesta; no autentica ni autoriza.
 - **Tipos válidos**: `sugerencias, analisis_rapido, micros, imagen, busqueda,
   receta, estimar`.
   - `sugerencias` → usa el system prompt del **servidor**
@@ -447,6 +456,12 @@ Orden de fuentes (IA nunca es la primera):
   timeouts.
 - **Netlify limita el body a 6 MB**: `MAX_CUERPO_BYTES = 4500000` y
   `MAX_IMAGEN = 2500000` dejan margen.
+- **CORS no es autenticación**: el chequeo de origen se saltea si el request no
+  trae header `Origin` (por ejemplo, un GET del mismo origen); en ese caso la
+  request sigue y solo la verificación del ID token decide si se atiende. No
+  usar CORS como control de acceso. La aceptación automática por mismo host
+  compara el host de `Origin` con `Host` (o `X-Forwarded-Host`) y no reemplaza a
+  `ALLOWED_ORIGIN` para requests de otros orígenes.
 - **Firebase por CDN**: los imports son `https://www.gstatic.com/firebasejs/10.8.1/...`.
   Cambiarlos a `'firebase/firestore'` (npm) rompe todo; si se migra, migrar
   completo.
