@@ -67,6 +67,7 @@ dist/
 
 # dotenv environment variables file
 .env
+.env.example
 
 # dataconnect generated files
 .dataconnect
